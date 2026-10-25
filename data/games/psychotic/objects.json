@@ -1,0 +1,320 @@
+{
+  "weapons": [
+    {
+      "id": 0,
+      "name": "fist",
+      "cmd": "FIST",
+      "verb": "SWING",
+      "useCmd": "SWING FIST"
+    },
+    {
+      "id": 17572,
+      "name": "shovel",
+      "cmd": "SHOVEL",
+      "verb": "SWING",
+      "useCmd": "SWING SHOVEL"
+    },
+    {
+      "id": 3094,
+      "name": "crowbar",
+      "cmd": "CROWBAR",
+      "verb": "SWING",
+      "useCmd": "SWING CROWBAR"
+    },
+    {
+      "id": 2864,
+      "name": "hatchet",
+      "cmd": "HATCHET",
+      "verb": "SWING",
+      "useCmd": "SWING HATCHET"
+    },
+    {
+      "id": 26286,
+      "name": "M-16",
+      "cmd": "M-16",
+      "verb": "FIRE",
+      "useCmd": "FIRE M-16"
+    },
+    {
+      "id": 23514,
+      "name": "grenades",
+      "cmd": "GRENADES",
+      "verb": "THROW",
+      "useCmd": "THROW GRENADES"
+    },
+    {
+      "id": 6860,
+      "name": "luger",
+      "cmd": "LUGER",
+      "verb": "FIRE",
+      "useCmd": "FIRE LUGER"
+    },
+    {
+      "id": 28106,
+      "name": ".38 Special",
+      "cmd": ".38 SPECIAL",
+      "verb": "FIRE",
+      "useCmd": "FIRE .38 SPECIAL"
+    },
+    {
+      "id": 31606,
+      "name": "club",
+      "cmd": "CLUB",
+      "verb": "SWING",
+      "useCmd": "SWING CLUB"
+    },
+    {
+      "id": 26026,
+      "name": "knife",
+      "cmd": "KNIFE",
+      "verb": "SWING",
+      "useCmd": "SWING KNIFE"
+    },
+    {
+      "id": 26878,
+      "name": "gun",
+      "cmd": "GUN",
+      "verb": "SHOOT",
+      "useCmd": "SHOOT GUN"
+    },
+    {
+      "id": 24592,
+      "name": "UZI",
+      "cmd": "UZI",
+      "verb": "FIRE",
+      "useCmd": "FIRE UZI"
+    }
+  ],
+  "items": [
+    {
+      "id": 3214,
+      "name": "Syrynge",
+      "cmd": "SYRYNGE",
+      "weapon": false
+    },
+    {
+      "id": 17572,
+      "name": "shovel",
+      "cmd": "SHOVEL",
+      "weapon": true
+    },
+    {
+      "id": 3094,
+      "name": "crowbar",
+      "cmd": "CROWBAR",
+      "weapon": true
+    },
+    {
+      "id": 2864,
+      "name": "hatchet",
+      "cmd": "HATCHET",
+      "weapon": true
+    },
+    {
+      "id": 7162,
+      "name": "drugs",
+      "cmd": "DRUGS",
+      "weapon": false
+    },
+    {
+      "id": 26286,
+      "name": "M-16",
+      "cmd": "M-16",
+      "weapon": true
+    },
+    {
+      "id": 22864,
+      "name": "brass key",
+      "cmd": "BRASS KEY",
+      "weapon": false
+    },
+    {
+      "id": 23514,
+      "name": "grenades",
+      "cmd": "GRENADES",
+      "weapon": true
+    },
+    {
+      "id": 980,
+      "name": "money",
+      "cmd": "MONEY",
+      "weapon": false
+    },
+    {
+      "id": 13286,
+      "name": "lid",
+      "cmd": "LID",
+      "weapon": false
+    },
+    {
+      "id": 28787,
+      "name": "clothes",
+      "cmd": "CLOTHES",
+      "weapon": false
+    },
+    {
+      "id": 6860,
+      "name": "luger",
+      "cmd": "LUGER",
+      "weapon": true
+    },
+    {
+      "id": 6252,
+      "name": "hostage",
+      "cmd": "HOSTAGE",
+      "weapon": false
+    },
+    {
+      "id": 5532,
+      "name": "button",
+      "cmd": "BUTTON",
+      "weapon": false
+    },
+    {
+      "id": 4626,
+      "name": "lever",
+      "cmd": "LEVER",
+      "weapon": false
+    },
+    {
+      "id": 626,
+      "name": "stick",
+      "cmd": "STICK",
+      "weapon": false
+    },
+    {
+      "id": 32512,
+      "name": "hydrant",
+      "cmd": "HYDRANT",
+      "weapon": true
+    },
+    {
+      "id": 28290,
+      "name": "hydrant water",
+      "cmd": "HYDRANT WATER",
+      "weapon": false
+    },
+    {
+      "id": 8320,
+      "name": "good time",
+      "cmd": "GOOD TIME",
+      "weapon": false
+    },
+    {
+      "id": 21984,
+      "name": "diamonds",
+      "cmd": "DIAMONDS",
+      "weapon": false
+    },
+    {
+      "id": 25632,
+      "name": "Tricky Dick",
+      "cmd": "TRICKY DICK",
+      "weapon": false
+    },
+    {
+      "id": 8480,
+      "name": "paper vendor",
+      "cmd": "PAPER VENDOR",
+      "weapon": false
+    },
+    {
+      "id": 11272,
+      "name": "Ginger",
+      "cmd": "GINGER",
+      "weapon": false
+    },
+    {
+      "id": 28106,
+      "name": ".38 Special",
+      "cmd": ".38 SPECIAL",
+      "weapon": true
+    },
+    {
+      "id": 31606,
+      "name": "club",
+      "cmd": "CLUB",
+      "weapon": true
+    },
+    {
+      "id": 5130,
+      "name": "Chinese Paper",
+      "cmd": "CHINESE PAPER",
+      "weapon": false
+    },
+    {
+      "id": 4267,
+      "name": "Coat Rack",
+      "cmd": "COAT RACK",
+      "weapon": false
+    },
+    {
+      "id": 12260,
+      "name": "kitchen drawers",
+      "cmd": "KITCHEN DRAWERS",
+      "weapon": false
+    },
+    {
+      "id": 26026,
+      "name": "knife",
+      "cmd": "KNIFE",
+      "weapon": true
+    },
+    {
+      "id": 25398,
+      "name": "Very Moist Stewardess",
+      "cmd": "VERY MOIST STEWARDESS",
+      "weapon": false
+    },
+    {
+      "id": 11166,
+      "name": "blowjob",
+      "cmd": "BLOWJOB",
+      "weapon": false
+    },
+    {
+      "id": 5106,
+      "name": "Mirror",
+      "cmd": "MIRROR",
+      "weapon": false
+    },
+    {
+      "id": 18293,
+      "name": "CABIN",
+      "cmd": "CABIN",
+      "weapon": false
+    },
+    {
+      "id": 13157,
+      "name": "Amulet",
+      "cmd": "AMULET",
+      "weapon": false
+    },
+    {
+      "id": 26878,
+      "name": "gun",
+      "cmd": "GUN",
+      "weapon": true
+    },
+    {
+      "id": 24592,
+      "name": "UZI",
+      "cmd": "UZI",
+      "weapon": true
+    },
+    {
+      "id": 31708,
+      "name": "BULLET-PROOF VEST",
+      "cmd": "BULLET-PROOF VEST",
+      "weapon": false
+    }
+  ],
+  "takePatterns": [
+    "you (?:take|get|pick up|grab|have)\\b",
+    "lucky you! you found"
+  ],
+  "dropPatterns": [
+    "you (?:drop|discard|leave|put down)\\b",
+    "pack is full"
+  ]
+}

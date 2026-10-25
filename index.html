@@ -236,6 +236,98 @@
     @media (min-width: 700px) {
       #controls { padding-left: 12%; padding-right: 12%; }
     }
+
+    #sheet-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 30;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    #sheet-overlay.open { display: flex; }
+    .psy-sheet {
+      width: 100%;
+      max-width: 520px;
+      max-height: 70%;
+      overflow: auto;
+      background: #1e1e1e;
+      border: 1px solid #555;
+      border-bottom: none;
+      border-radius: 14px 14px 0 0;
+      padding: 12px 12px calc(12px + var(--safe-b));
+      color: var(--text);
+      -webkit-user-select: text;
+      user-select: text;
+      touch-action: manipulation;
+    }
+    .psy-sheet h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .psy-sheet .sheet-close {
+      min-width: 44px;
+      min-height: 36px;
+    }
+    .psy-sheet .hint {
+      font-size: 12px;
+      opacity: 0.75;
+      margin: 0 0 10px;
+      line-height: 1.35;
+    }
+    .psy-sheet ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .psy-sheet li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+    .psy-sheet li.owned { border-color: #c45c16; background: #3a2a1a; }
+    .psy-sheet li .meta { font-size: 11px; opacity: 0.7; }
+    .psy-sheet li button {
+      appearance: none;
+      border: 1px solid #666;
+      background: #3a3a3a;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      min-height: 32px;
+    }
+    .owned-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 6px;
+      min-height: 0;
+    }
+    .owned-pills:empty { display: none; }
+    .owned-pill {
+      font-size: 11px;
+      background: #3a2a1a;
+      border: 1px solid #c45c16;
+      border-radius: 999px;
+      padding: 2px 8px;
+      color: #f0e6d2;
+    }
   </style>
 </head>
 <body>
@@ -271,18 +363,20 @@
       <button type="button" class="psy-btn dir" data-cmd="U">U</button>
       <button type="button" class="psy-btn dir" data-cmd="D">D</button>
     </div>
+    <div class="owned-pills" id="owned-pills" aria-live="polite"></div>
     <div class="btn-row" id="row-verbs">
       <button type="button" class="psy-btn verb" data-cmd="LOOK">LOOK</button>
       <button type="button" class="psy-btn verb" data-partial="GET ">GET</button>
       <button type="button" class="psy-btn verb" data-partial="OPEN ">OPEN</button>
       <button type="button" class="psy-btn verb" data-cmd="SEARCH">SEARCH</button>
       <button type="button" class="psy-btn verb" data-cmd="CLOSE">CLOSE</button>
+      <button type="button" class="psy-btn util" id="btn-inv" title="Inventory">INV</button>
+      <button type="button" class="psy-btn util" id="btn-weapons" title="Weapons">Weapons</button>
     </div>
     <div class="btn-row" id="row-more" hidden>
-      <button type="button" class="psy-btn util" data-cmd="INVENTORY">INV</button>
+      <button type="button" class="psy-btn util" data-cmd="INVENTORY">INV cmd</button>
       <button type="button" class="psy-btn util" data-cmd="STATUS">STATUS</button>
       <button type="button" class="psy-btn util" data-cmd="REST">REST</button>
-      <button type="button" class="psy-btn util" data-partial="">Weapons…</button>
       <button type="button" class="psy-btn util" data-cmd="LOOK">L</button>
     </div>
     <div id="cmd-row">
@@ -290,6 +384,17 @@
              autocapitalize="characters" spellcheck="false" placeholder="Type LOOK, GET door…" />
       <button type="button" class="psy-btn" id="cmd-send">Send</button>
       <button type="button" class="psy-btn util" id="cmd-kb" title="Show phone keyboard">⌨</button>
+    </div>
+  </div>
+
+
+  <div id="sheet-overlay" aria-hidden="true">
+    <div class="psy-sheet" id="sheet-panel" role="dialog">
+      <h2><span id="sheet-title">Inventory</span>
+        <button type="button" class="psy-btn util sheet-close" id="sheet-close">Close</button>
+      </h2>
+      <p class="hint" id="sheet-hint"></p>
+      <ul id="sheet-list"></ul>
     </div>
   </div>
 
@@ -315,7 +420,7 @@
     })();
 
     // Cache-bust for IDBFS-refreshed scummvm.ini (see scummvm.js).
-    window.__PSY_CFG_V = 'k4';
+    window.__PSY_CFG_V = 'k5';
 
     // Match kuendig demo: launch args come from the URL hash.
     // Force software gfx (-g 1x) so iOS Safari WebGL hangs cannot leave
@@ -327,21 +432,31 @@
 
     // ---- Hybrid UI: key injection into ScummVM (SDL3 / Emscripten) ----
     // SDL3 maps scancodes from event.code and text from event.key (keypress).
-    // Synthetic KeyboardEvents often fail (keyCode=0 / reused event / wrong target).
-    // Fix: call Module.JSEvents handlers directly with a full key/code payload
-    // (juj / emscripten#3614), then also dispatch a fresh event on window.
+    // Synthetic KeyboardEvents often fail; call Module.JSEvents handlers directly.
+    // Typed Send must NOT leave a half-entered line: clear with Escape, then
+    // inject the full command + Enter exactly like the LOOK button path.
+
+    var __psyCmdBusy = false;
+    var __psyCmdQueue = [];
+    var __psyFromHtmlInput = false;
+
     function psyCodeForChar(ch) {
       if (ch === '\n' || ch === '\r') return 'Enter';
       if (ch === ' ') return 'Space';
       if (ch === '\b') return 'Backspace';
+      if (ch === '\u001b') return 'Escape';
       if (ch.length === 1 && /[a-zA-Z]/.test(ch)) return 'Key' + ch.toUpperCase();
       if (ch.length === 1 && /[0-9]/.test(ch)) return 'Digit' + ch;
+      if (ch === '-') return 'Minus';
+      if (ch === '.') return 'Period';
       return 'Unidentified';
     }
 
     function psyMakeKeyStub(type, key, codeStr, keyCode) {
       var charCode = (type === 'keypress' && keyCode >= 32) ? keyCode : 0;
-      var stub = {
+      // Enter keypress: some SDL builds still want charCode 13
+      if (type === 'keypress' && keyCode === 13) charCode = 13;
+      return {
         type: type,
         key: key,
         code: codeStr,
@@ -369,7 +484,6 @@
         stopPropagation: function () {},
         stopImmediatePropagation: function () {}
       };
-      return stub;
     }
 
     function psyDispatchKey(type, key, codeStr, keyCode) {
@@ -380,17 +494,13 @@
       stub.srcElement = stub.target;
 
       var delivered = 0;
-      // 1) Preferred: invoke Emscripten JSEvents handlers directly (SDL3 path).
       try {
         var JE = (typeof Module !== 'undefined') ? Module.JSEvents : null;
         if (JE && JE.eventHandlers && JE.eventHandlers.length) {
           for (var i = 0; i < JE.eventHandlers.length; i++) {
             var h = JE.eventHandlers[i];
             if (!h || h.eventTypeString !== type || typeof h.handlerFunc !== 'function') continue;
-            try {
-              h.handlerFunc(stub);
-              delivered++;
-            } catch (err) {
+            try { h.handlerFunc(stub); delivered++; } catch (err) {
               console.warn('[psy] JSEvents handler error', type, err);
             }
           }
@@ -399,7 +509,6 @@
         console.warn('[psy] JSEvents inject failed', e);
       }
 
-      // 2) Legacy SDL1 receiveEvent if present.
       if (!delivered) {
         try {
           if (typeof Module !== 'undefined' && Module.SDL && typeof Module.SDL.receiveEvent === 'function') {
@@ -409,20 +518,13 @@
         } catch (e2) {}
       }
 
-      // 3) Fallback only if no JSEvents/SDL handler accepted the stub.
       if (!delivered) {
         try {
           var ev;
           try {
             ev = new KeyboardEvent(type, {
-              key: key,
-              code: codeStr,
-              keyCode: keyCode,
-              which: keyCode,
-              charCode: stub.charCode,
-              bubbles: true,
-              cancelable: true,
-              view: window
+              key: key, code: codeStr, keyCode: keyCode, which: keyCode,
+              charCode: stub.charCode, bubbles: true, cancelable: true, view: window
             });
           } catch (e3) {
             ev = document.createEvent('Event');
@@ -435,11 +537,10 @@
             Object.defineProperty(ev, 'key', { get: function () { return key; } });
             Object.defineProperty(ev, 'code', { get: function () { return codeStr; } });
           } catch (e4) {}
-          window.dispatchEvent(ev);
+          (canvas || window).dispatchEvent(ev);
           delivered++;
         } catch (e5) {}
       }
-
       if (window.__psyInjectLog) {
         console.log('[psy] inject', type, key, codeStr, keyCode, 'handlers=' + delivered);
       }
@@ -449,26 +550,25 @@
     function psySendChar(ch) {
       var key, keyCode, codeStr;
       if (ch === '\n' || ch === '\r') {
-        key = 'Enter';
-        keyCode = 13;
-        codeStr = 'Enter';
+        key = 'Enter'; keyCode = 13; codeStr = 'Enter';
+      } else if (ch === '\u001b') {
+        key = 'Escape'; keyCode = 27; codeStr = 'Escape';
       } else if (ch === ' ') {
-        key = ' ';
-        keyCode = 32;
-        codeStr = 'Space';
+        key = ' '; keyCode = 32; codeStr = 'Space';
       } else if (ch === '\b') {
-        key = 'Backspace';
-        keyCode = 8;
-        codeStr = 'Backspace';
+        key = 'Backspace'; keyCode = 8; codeStr = 'Backspace';
       } else {
-        // SDL3 text path wants the printable char in event.key on keypress.
         key = ch;
         keyCode = ch.toUpperCase().charCodeAt(0);
         codeStr = psyCodeForChar(ch);
       }
       psyDispatchKey('keydown', key, codeStr, keyCode);
       // keypress feeds SDL_SendKeyboardText when TextInputActive (needed for WAGE prompt).
-      if (keyCode >= 32) psyDispatchKey('keypress', key, codeStr, keyCode);
+      // Also send keypress for Enter (charCode 13) — some builds only commit the line then.
+      if (keyCode >= 32 || keyCode === 13) {
+        var pressKey = (keyCode === 13) ? '\r' : key;
+        psyDispatchKey('keypress', pressKey, codeStr, keyCode);
+      }
       psyDispatchKey('keyup', key, codeStr, keyCode);
     }
 
@@ -480,7 +580,6 @@
       var canvas = document.getElementById('canvas');
       if (canvas) {
         try {
-          // tabindex=-1 makes canvas focusable; SDL3 also accepts document.hasFocus().
           if (!canvas.hasAttribute('tabindex')) canvas.setAttribute('tabindex', '-1');
           canvas.focus({ preventScroll: true });
         } catch (e2) {
@@ -490,39 +589,103 @@
       try { window.focus(); } catch (e4) {}
     }
 
-    function psySendText(text, pressEnter) {
+    function psyDelay(ms) {
+      return new Promise(function (resolve) { setTimeout(resolve, ms); });
+    }
+
+    async function psyClearPartialLine() {
+      // Cancel any half-typed WAGE command line so we never append onto leftovers.
+      psyFocusGame();
+      await psyDelay(30);
+      psySendChar('\u001b'); // Escape
+      await psyDelay(50);
+      // A few backspaces as belt-and-suspenders if Escape is ignored.
+      for (var i = 0; i < 12; i++) {
+        psySendChar('\b');
+        await psyDelay(10);
+      }
+      await psyDelay(40);
+    }
+
+    async function psySendTextAsync(text, pressEnter) {
       var s = String(text || '');
-      var i = 0;
       window.__psyInjectLog = true;
       console.log('[psy] sendText', JSON.stringify(s), 'enter=' + !!pressEnter);
       psyFocusGame();
-      function step() {
+      await psyDelay(40);
+      for (var i = 0; i < s.length; i++) {
         psyFocusGame();
-        if (i < s.length) {
-          psySendChar(s.charAt(i++));
-          setTimeout(step, 25);
-        } else if (pressEnter) {
-          setTimeout(function () {
-            psyFocusGame();
-            psySendChar('\r');
-            setTimeout(function () { window.__psyInjectLog = false; }, 100);
-          }, 40);
-        } else {
-          window.__psyInjectLog = false;
-        }
+        psySendChar(s.charAt(i));
+        await psyDelay(28);
       }
-      // Short delay so blur/focus settle before keys (esp. after combat "A miss!").
-      setTimeout(step, 60);
+      if (pressEnter) {
+        await psyDelay(50);
+        psyFocusGame();
+        psySendChar('\r');
+        await psyDelay(80);
+        // Second Enter only if somehow the first was eaten — rare; skip by default.
+      }
+      window.__psyInjectLog = false;
     }
 
-    function psySubmitCommand(raw) {
+    function psyTrackCommand(cmd) {
+      try {
+        if (window.__psyInv && typeof window.__psyInv.onCommand === 'function') {
+          window.__psyInv.onCommand(cmd);
+        }
+      } catch (e) {}
+    }
+
+    async function psyRunCommand(raw, opts) {
+      opts = opts || {};
       var t = (raw || '').replace(/^\s+|\s+$/g, '');
       if (!t) return;
-      console.log('[psy] submit', t);
-      psySendText(t.toUpperCase(), true);
+      t = t.toUpperCase();
+      console.log('[psy] submit', t, opts);
+      // Longer settle when coming from the HTML text field (iOS keyboard dismiss).
+      var settle = opts.fromInput ? 280 : 60;
+      psyFocusGame();
+      await psyDelay(settle);
+      await psyClearPartialLine();
+      await psySendTextAsync(t, true);
+      psyTrackCommand(t);
+    }
+
+    function psySubmitCommand(raw, opts) {
+      opts = opts || {};
+      var t = (raw || '').replace(/^\s+|\s+$/g, '');
+      if (!t) return;
       var inp = document.getElementById('cmd-input');
       if (inp) inp.value = '';
+      __psyCmdQueue.push({ raw: t, opts: opts });
+      psyDrainCmdQueue();
     }
+
+    async function psyDrainCmdQueue() {
+      if (__psyCmdBusy) return;
+      __psyCmdBusy = true;
+      try {
+        while (__psyCmdQueue.length) {
+          var job = __psyCmdQueue.shift();
+          await psyRunCommand(job.raw, job.opts);
+          await psyDelay(120);
+        }
+      } finally {
+        __psyCmdBusy = false;
+      }
+    }
+
+    // Keep sync wrappers used elsewhere
+    function psySendText(text, pressEnter) {
+      // Legacy sync API → queue as command (with enter) or inject chars only
+      if (pressEnter) {
+        psySubmitCommand(text, { fromInput: __psyFromHtmlInput });
+        __psyFromHtmlInput = false;
+      } else {
+        psySendTextAsync(text, false);
+      }
+    }
+
     // ---- Ambient / SFX mute via Web Audio gain ----
     window.__psySfxMuted = false;
     window.__psyGain = null;
@@ -568,7 +731,6 @@
         gain.gain.value = window.__psySfxMuted ? 0 : 1;
         return;
       }
-      // Fallback: suspend / resume whole context (mutes everything).
       try {
         var SDL3 = Module.SDL3;
         if (SDL3 && SDL3.audioContext) {
@@ -578,7 +740,6 @@
       } catch (e) {}
     }
 
-    // Remember the AudioContext ScummVM creates (SDL3); gain is wired in psyEnsureGain.
     (function () {
       var OrigAC = window.AudioContext || window.webkitAudioContext;
       if (!OrigAC) return;
@@ -593,6 +754,207 @@
       if (window.webkitAudioContext) window.webkitAudioContext = PatchedAC;
     })();
 
+    // ---- Inventory / Weapons tracking (best-effort) ----
+    window.__psyInv = (function () {
+      var state = {
+        owned: { FIST: true }, // unarmed always available
+        catalog: { weapons: [], items: [] },
+        sheetMode: null
+      };
+
+      function norm(s) {
+        return String(s || '').toUpperCase().replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+      }
+
+      function renderPills() {
+        var el = document.getElementById('owned-pills');
+        if (!el) return;
+        var names = Object.keys(state.owned).filter(function (k) { return state.owned[k] && k !== 'FIST'; });
+        el.innerHTML = names.map(function (n) {
+          return '<span class="owned-pill">' + n.replace(/</g, '&lt;') + '</span>';
+        }).join('');
+      }
+
+      function setOwned(name, have) {
+        var n = norm(name);
+        if (!n) return;
+        if (have) state.owned[n] = true;
+        else if (n !== 'FIST') delete state.owned[n];
+        renderPills();
+        if (state.sheetMode) openSheet(state.sheetMode);
+      }
+
+      function matchItem(token) {
+        var t = norm(token);
+        var lists = (state.catalog.weapons || []).concat(state.catalog.items || []);
+        for (var i = 0; i < lists.length; i++) {
+          var it = lists[i];
+          if (norm(it.name) === t || norm(it.cmd) === t) return it;
+        }
+        // fuzzy: token contains or is contained
+        for (var j = 0; j < lists.length; j++) {
+          var it2 = lists[j];
+          var n = norm(it2.name);
+          if (n && (t.indexOf(n) !== -1 || n.indexOf(t) !== -1)) return it2;
+        }
+        return null;
+      }
+
+      function onCommand(cmd) {
+        var c = norm(cmd);
+        var m;
+        if ((m = /^GET\s+(.+)$/.exec(c))) {
+          var it = matchItem(m[1]);
+          setOwned(it ? it.name : m[1], true);
+        } else if ((m = /^DROP\s+(.+)$/.exec(c))) {
+          var it2 = matchItem(m[1]);
+          setOwned(it2 ? it2.name : m[1], false);
+        } else if ((m = /^(TAKE|GRAB|PICK UP)\s+(.+)$/.exec(c))) {
+          var it3 = matchItem(m[2]);
+          setOwned(it3 ? it3.name : m[2], true);
+        }
+      }
+
+      function onPrint(text) {
+        var t = String(text || '');
+        var low = t.toLowerCase();
+        // Best-effort parse of rare stdout lines (WAGE usually draws to canvas).
+        var take = /(?:you (?:take|get|grab|pick up)|lucky you! you found)\s+([a-z0-9 .'\-]+)/i.exec(t);
+        if (take) {
+          var name = take[1].replace(/[!.]+$/, '').trim();
+          if (name) setOwned(name, true);
+        }
+        var drop = /you (?:drop|discard|put down)\s+([a-z0-9 .'\-]+)/i.exec(t);
+        if (drop) {
+          var name2 = drop[1].replace(/[!.]+$/, '').trim();
+          if (name2) setOwned(name2, false);
+        }
+        if (/you have no weapons|do not have any weapons/i.test(low)) {
+          // keep fist only for weapons view indicator — don't wipe inventory
+        }
+      }
+
+      function closeSheet() {
+        var ov = document.getElementById('sheet-overlay');
+        if (ov) {
+          ov.classList.remove('open');
+          ov.setAttribute('aria-hidden', 'true');
+        }
+        state.sheetMode = null;
+      }
+
+      function openSheet(mode) {
+        state.sheetMode = mode;
+        var ov = document.getElementById('sheet-overlay');
+        var title = document.getElementById('sheet-title');
+        var hint = document.getElementById('sheet-hint');
+        var list = document.getElementById('sheet-list');
+        if (!ov || !list) return;
+        ov.classList.add('open');
+        ov.setAttribute('aria-hidden', 'false');
+        list.innerHTML = '';
+
+        if (mode === 'inv') {
+          title.textContent = 'Inventory';
+          hint.textContent = 'Tracked items (best-effort). Tap GET in-game or type GET NAME. “INV cmd” sends the game Inventory command. Owned items highlighted.';
+          // Owned first
+          var ownedNames = Object.keys(state.owned).filter(function (k) { return state.owned[k]; });
+          if (!ownedNames.length) {
+            list.innerHTML = '<li><span>Empty — try GET after searching rooms.</span></li>';
+          }
+          ownedNames.forEach(function (n) {
+            var li = document.createElement('li');
+            li.className = 'owned';
+            li.innerHTML = '<span>' + n.replace(/</g, '&lt;') + ' <span class="meta">carrying</span></span>';
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = 'LOOK';
+            b.addEventListener('click', function () {
+              closeSheet();
+              psySubmitCommand('LOOK ' + n);
+            });
+            li.appendChild(b);
+            list.appendChild(li);
+          });
+          // Also list known gettables not owned (compact)
+          var extras = (state.catalog.items || []).filter(function (it) {
+            return !state.owned[norm(it.name)];
+          }).slice(0, 24);
+          extras.forEach(function (it) {
+            var li = document.createElement('li');
+            li.innerHTML = '<span>' + String(it.name).replace(/</g, '&lt;') + ' <span class="meta">known</span></span>';
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = 'GET';
+            b.addEventListener('click', function () {
+              closeSheet();
+              psySubmitCommand('GET ' + norm(it.name));
+            });
+            li.appendChild(b);
+            list.appendChild(li);
+          });
+        } else {
+          title.textContent = 'Weapons';
+          hint.textContent = 'Tap a weapon you own to use it. Orange = tracked as carried. Fist is always available.';
+          (state.catalog.weapons || []).forEach(function (w) {
+            var n = norm(w.name);
+            var have = !!state.owned[n] || n === 'FIST';
+            var li = document.createElement('li');
+            if (have) li.className = 'owned';
+            var label = String(w.name).replace(/</g, '&lt;');
+            var meta = have ? 'ready' : 'not carrying';
+            li.innerHTML = '<span>' + label + ' <span class="meta">' + meta + ' · ' + (w.verb || 'USE') + '</span></span>';
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = have ? 'USE' : 'GET';
+            b.addEventListener('click', function () {
+              closeSheet();
+              if (have) {
+                psySubmitCommand(w.useCmd || ('USE ' + n));
+              } else {
+                psySubmitCommand('GET ' + n);
+              }
+            });
+            li.appendChild(b);
+            list.appendChild(li);
+          });
+        }
+      }
+
+      function loadCatalog() {
+        var base = new URL('.', document.baseURI).pathname.replace(/\/?$/, '/');
+        var url = base + 'data/games/psychotic/objects.json?v=k5';
+        fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+          state.catalog.weapons = j.weapons || [];
+          state.catalog.items = j.items || [];
+          console.log('[psy] loaded', state.catalog.weapons.length, 'weapons,', state.catalog.items.length, 'items');
+          renderPills();
+        }).catch(function (e) {
+          console.warn('[psy] objects.json failed', e);
+          // Minimal fallback
+          state.catalog.weapons = [
+            { name: 'fist', cmd: 'FIST', verb: 'SWING', useCmd: 'SWING FIST' },
+            { name: 'knife', cmd: 'KNIFE', verb: 'SWING', useCmd: 'SWING KNIFE' },
+            { name: 'club', cmd: 'CLUB', verb: 'SWING', useCmd: 'SWING CLUB' },
+            { name: 'M-16', cmd: 'M-16', verb: 'FIRE', useCmd: 'FIRE M-16' },
+            { name: 'grenades', cmd: 'GRENADES', verb: 'THROW', useCmd: 'THROW GRENADES' },
+            { name: 'UZI', cmd: 'UZI', verb: 'FIRE', useCmd: 'FIRE UZI' },
+            { name: 'luger', cmd: 'LUGER', verb: 'FIRE', useCmd: 'FIRE LUGER' }
+          ];
+        });
+      }
+
+      return {
+        onCommand: onCommand,
+        onPrint: onPrint,
+        openSheet: openSheet,
+        closeSheet: closeSheet,
+        setOwned: setOwned,
+        loadCatalog: loadCatalog,
+        state: state
+      };
+    })();
+
     // ---- Wire UI ----
     (function setupHybridUI() {
       var input = document.getElementById('cmd-input');
@@ -601,10 +963,22 @@
       var moreBtn = document.getElementById('btn-more');
       var moreRow = document.getElementById('row-more');
       var muteBtn = document.getElementById('btn-mute');
+      var invBtn = document.getElementById('btn-inv');
+      var weapBtn = document.getElementById('btn-weapons');
+      var sheetClose = document.getElementById('sheet-close');
+      var sheetOv = document.getElementById('sheet-overlay');
 
-      function onSend() { psySubmitCommand(input.value); }
+      function onSend() {
+        var v = (input && input.value) || '';
+        // Same path as LOOK button: full command + Enter after clear.
+        // Mark fromInput so we wait for iOS keyboard dismiss before injecting.
+        __psyFromHtmlInput = true;
+        psySubmitCommand(v, { fromInput: true });
+        __psyFromHtmlInput = false;
+      }
       sendBtn.addEventListener('click', function (e) {
         e.preventDefault();
+        e.stopPropagation();
         onSend();
       });
       input.addEventListener('keydown', function (e) {
@@ -617,6 +991,8 @@
       });
       input.addEventListener('keyup', function (e) { e.stopPropagation(); });
       input.addEventListener('keypress', function (e) { e.stopPropagation(); });
+      // iOS can deliver text via input events — never forward those to the game.
+      input.addEventListener('input', function (e) { e.stopPropagation(); });
 
       kbBtn.addEventListener('click', function (e) {
         e.preventDefault();
@@ -635,7 +1011,36 @@
         psySetMuted(!window.__psySfxMuted);
       });
 
+      if (invBtn) {
+        invBtn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          // Open tracker panel AND send game INV so on-screen text updates.
+          window.__psyInv.openSheet('inv');
+          psySubmitCommand('INVENTORY');
+        });
+      }
+      if (weapBtn) {
+        weapBtn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          window.__psyInv.openSheet('weapons');
+        });
+      }
+      if (sheetClose) {
+        sheetClose.addEventListener('click', function (e) {
+          e.preventDefault();
+          window.__psyInv.closeSheet();
+        });
+      }
+      if (sheetOv) {
+        sheetOv.addEventListener('click', function (e) {
+          if (e.target === sheetOv) window.__psyInv.closeSheet();
+        });
+      }
+
       function bindButtons(root) {
+        if (!root) return;
         var buttons = root.querySelectorAll('.psy-btn[data-cmd], .psy-btn[data-partial]');
         for (var i = 0; i < buttons.length; i++) {
           (function (btn) {
@@ -646,15 +1051,9 @@
                 psySubmitCommand(btn.getAttribute('data-cmd'));
               } else if (btn.hasAttribute('data-partial')) {
                 var partial = btn.getAttribute('data-partial');
-                if (partial === '' && btn.textContent.indexOf('Weapon') !== -1) {
-                  input.value = '';
-                  input.placeholder = 'Type weapon use, e.g. SWING FIST';
-                  input.focus();
-                  return;
-                }
+                // Fill the HTML field only — do NOT inject into the game yet.
                 input.value = partial;
                 input.focus();
-                // Place caret at end for completing GET/OPEN.
                 try {
                   var len = input.value.length;
                   input.setSelectionRange(len, len);
@@ -667,7 +1066,8 @@
       bindButtons(document.getElementById('controls'));
       bindButtons(document.getElementById('top-chrome'));
 
-      // After audio starts, try to insert gain (ambient laugh is SFX in WAGE).
+      window.__psyInv.loadCatalog();
+
       var tries = 0;
       var timer = setInterval(function () {
         tries++;
@@ -682,10 +1082,12 @@
       print: function (text) {
         if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
         console.log(text);
+        try { if (window.__psyInv) window.__psyInv.onPrint(text); } catch (e) {}
       },
       printErr: function (text) {
         if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
         console.error(text);
+        try { if (window.__psyInv) window.__psyInv.onPrint(text); } catch (e) {}
       },
       canvas: (function () {
         var canvas = document.getElementById('canvas');
@@ -716,7 +1118,7 @@
         if (hint) {
           hint.textContent = 'Tap BEGIN, then LOOK — or use the buttons / type below.';
           setTimeout(function () {
-            hint.textContent = 'Buttons + keyboard at bottom. Mute SFX stops the looping laugh.';
+            hint.textContent = 'INV/Weapons track what you carry. Type + Send uses the same path as LOOK.';
           }, 5000);
           setTimeout(function () { hint.style.opacity = '0.3'; }, 14000);
         }
