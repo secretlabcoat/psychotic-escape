@@ -4,6 +4,22 @@ var utils = require('pcejs-util')
 
 var loadingStatus = utils.loadingStatus(document.querySelector('.pcejs-loading-status'))
 
+// Keep the Mac's absolute mouse mapping working: never engage pointer lock
+// (pointer lock hides the host cursor and only feeds relative movement).
+;(function disablePointerLock() {
+  var noop = function () {}
+  var proto = typeof HTMLCanvasElement !== 'undefined' ? HTMLCanvasElement.prototype : null
+  if (proto) {
+    proto.requestPointerLock = noop
+    proto.mozRequestPointerLock = noop
+    proto.webkitRequestPointerLock = noop
+    proto.msRequestPointerLock = noop
+  }
+  if (typeof Element !== 'undefined' && Element.prototype) {
+    Element.prototype.requestPointerLock = noop
+  }
+})()
+
 macplus({
   arguments: ['-c', 'pce-config.cfg', '-r'],
   autoloadFiles: [
@@ -19,6 +35,7 @@ macplus({
   print: function (t) { console.log(t) },
   printErr: function (t) { console.warn(t) },
   canvas: document.querySelector('.pcejs-canvas'),
+  elementPointerLock: false,
   monitorRunDependencies: function (remainingDependencies) {
     loadingStatus.update(remainingDependencies)
   },
