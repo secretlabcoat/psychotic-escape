@@ -315,7 +315,7 @@
     })();
 
     // Cache-bust for IDBFS-refreshed scummvm.ini (see scummvm.js).
-    window.__PSY_CFG_V = 'k3';
+    window.__PSY_CFG_V = 'k4';
 
     // Match kuendig demo: launch args come from the URL hash.
     // Force software gfx (-g 1x) so iOS Safari WebGL hangs cannot leave
@@ -326,98 +326,203 @@
     }
 
     // ---- Hybrid UI: key injection into ScummVM (SDL3 / Emscripten) ----
-    function psyMakeKeyEvent(type, key, keyCode) {
-      var ev;
-      try {
-        ev = new KeyboardEvent(type, {
-          key: key,
-          code: key.length === 1 ? 'Key' + key.toUpperCase() : (key === 'Enter' ? 'Enter' : 'Unidentified'),
-          keyCode: keyCode,
-          which: keyCode,
-          charCode: type === 'keypress' ? keyCode : 0,
-          bubbles: true,
-          cancelable: true,
-          view: window
-        });
-      } catch (e) {
-        ev = document.createEvent('Event');
-        ev.initEvent(type, true, true);
-      }
-      // Safari / Chromium often ignore keyCode in the constructor.
-      try {
-        Object.defineProperty(ev, 'keyCode', { get: function () { return keyCode; } });
-        Object.defineProperty(ev, 'which', { get: function () { return keyCode; } });
-        Object.defineProperty(ev, 'charCode', { get: function () { return type === 'keypress' ? keyCode : 0; } });
-        Object.defineProperty(ev, 'key', { get: function () { return key; } });
-      } catch (e2) {}
-      return ev;
+    // SDL3 maps scancodes from event.code and text from event.key (keypress).
+    // Synthetic KeyboardEvents often fail (keyCode=0 / reused event / wrong target).
+    // Fix: call Module.JSEvents handlers directly with a full key/code payload
+    // (juj / emscripten#3614), then also dispatch a fresh event on window.
+    function psyCodeForChar(ch) {
+      if (ch === '\n' || ch === '\r') return 'Enter';
+      if (ch === ' ') return 'Space';
+      if (ch === '\b') return 'Backspace';
+      if (ch.length === 1 && /[a-zA-Z]/.test(ch)) return 'Key' + ch.toUpperCase();
+      if (ch.length === 1 && /[0-9]/.test(ch)) return 'Digit' + ch;
+      return 'Unidentified';
     }
 
-    function psyDispatchKey(type, key, keyCode) {
+    function psyMakeKeyStub(type, key, codeStr, keyCode) {
+      var charCode = (type === 'keypress' && keyCode >= 32) ? keyCode : 0;
+      var stub = {
+        type: type,
+        key: key,
+        code: codeStr,
+        keyCode: keyCode,
+        which: keyCode,
+        charCode: charCode,
+        location: 0,
+        ctrlKey: false,
+        shiftKey: false,
+        altKey: false,
+        metaKey: false,
+        repeat: false,
+        char: type === 'keypress' ? key : '',
+        locale: '',
+        timeStamp: (typeof performance !== 'undefined' ? performance.now() : Date.now()),
+        bubbles: true,
+        cancelable: true,
+        defaultPrevented: false,
+        isTrusted: false,
+        target: null,
+        currentTarget: null,
+        srcElement: null,
+        view: window,
+        preventDefault: function () { this.defaultPrevented = true; },
+        stopPropagation: function () {},
+        stopImmediatePropagation: function () {}
+      };
+      return stub;
+    }
+
+    function psyDispatchKey(type, key, codeStr, keyCode) {
       var canvas = document.getElementById('canvas');
-      var ev = psyMakeKeyEvent(type, key, keyCode);
-      // Prefer Module.SDL.receiveEvent when present (legacy SDL1 path).
+      var stub = psyMakeKeyStub(type, key, codeStr, keyCode);
+      stub.target = canvas || window;
+      stub.currentTarget = stub.target;
+      stub.srcElement = stub.target;
+
+      var delivered = 0;
+      // 1) Preferred: invoke Emscripten JSEvents handlers directly (SDL3 path).
       try {
-        if (typeof Module !== 'undefined' && Module.SDL && typeof Module.SDL.receiveEvent === 'function') {
-          Module.SDL.receiveEvent(ev);
-          return;
+        var JE = (typeof Module !== 'undefined') ? Module.JSEvents : null;
+        if (JE && JE.eventHandlers && JE.eventHandlers.length) {
+          for (var i = 0; i < JE.eventHandlers.length; i++) {
+            var h = JE.eventHandlers[i];
+            if (!h || h.eventTypeString !== type || typeof h.handlerFunc !== 'function') continue;
+            try {
+              h.handlerFunc(stub);
+              delivered++;
+            } catch (err) {
+              console.warn('[psy] JSEvents handler error', type, err);
+            }
+          }
         }
-      } catch (e) {}
-      // SDL3 listens on document / window / canvas via Emscripten callbacks.
-      var targets = [window, document, canvas];
-      for (var i = 0; i < targets.length; i++) {
-        if (targets[i]) {
-          try { targets[i].dispatchEvent(ev); } catch (e) {}
-        }
+      } catch (e) {
+        console.warn('[psy] JSEvents inject failed', e);
       }
+
+      // 2) Legacy SDL1 receiveEvent if present.
+      if (!delivered) {
+        try {
+          if (typeof Module !== 'undefined' && Module.SDL && typeof Module.SDL.receiveEvent === 'function') {
+            Module.SDL.receiveEvent(stub);
+            delivered++;
+          }
+        } catch (e2) {}
+      }
+
+      // 3) Fallback only if no JSEvents/SDL handler accepted the stub.
+      if (!delivered) {
+        try {
+          var ev;
+          try {
+            ev = new KeyboardEvent(type, {
+              key: key,
+              code: codeStr,
+              keyCode: keyCode,
+              which: keyCode,
+              charCode: stub.charCode,
+              bubbles: true,
+              cancelable: true,
+              view: window
+            });
+          } catch (e3) {
+            ev = document.createEvent('Event');
+            ev.initEvent(type, true, true);
+          }
+          try {
+            Object.defineProperty(ev, 'keyCode', { get: function () { return keyCode; } });
+            Object.defineProperty(ev, 'which', { get: function () { return keyCode; } });
+            Object.defineProperty(ev, 'charCode', { get: function () { return stub.charCode; } });
+            Object.defineProperty(ev, 'key', { get: function () { return key; } });
+            Object.defineProperty(ev, 'code', { get: function () { return codeStr; } });
+          } catch (e4) {}
+          window.dispatchEvent(ev);
+          delivered++;
+        } catch (e5) {}
+      }
+
+      if (window.__psyInjectLog) {
+        console.log('[psy] inject', type, key, codeStr, keyCode, 'handlers=' + delivered);
+      }
+      return delivered;
     }
 
     function psySendChar(ch) {
-      var key, code;
+      var key, keyCode, codeStr;
       if (ch === '\n' || ch === '\r') {
         key = 'Enter';
-        code = 13;
+        keyCode = 13;
+        codeStr = 'Enter';
       } else if (ch === ' ') {
         key = ' ';
-        code = 32;
+        keyCode = 32;
+        codeStr = 'Space';
+      } else if (ch === '\b') {
+        key = 'Backspace';
+        keyCode = 8;
+        codeStr = 'Backspace';
       } else {
+        // SDL3 text path wants the printable char in event.key on keypress.
         key = ch;
-        code = ch.toUpperCase().charCodeAt(0);
+        keyCode = ch.toUpperCase().charCodeAt(0);
+        codeStr = psyCodeForChar(ch);
       }
-      psyDispatchKey('keydown', key, code);
-      if (code >= 32) psyDispatchKey('keypress', key, code);
-      psyDispatchKey('keyup', key, code);
+      psyDispatchKey('keydown', key, codeStr, keyCode);
+      // keypress feeds SDL_SendKeyboardText when TextInputActive (needed for WAGE prompt).
+      if (keyCode >= 32) psyDispatchKey('keypress', key, codeStr, keyCode);
+      psyDispatchKey('keyup', key, codeStr, keyCode);
+    }
+
+    function psyFocusGame() {
+      var inp = document.getElementById('cmd-input');
+      if (inp) {
+        try { inp.blur(); } catch (e) {}
+      }
+      var canvas = document.getElementById('canvas');
+      if (canvas) {
+        try {
+          // tabindex=-1 makes canvas focusable; SDL3 also accepts document.hasFocus().
+          if (!canvas.hasAttribute('tabindex')) canvas.setAttribute('tabindex', '-1');
+          canvas.focus({ preventScroll: true });
+        } catch (e2) {
+          try { canvas.focus(); } catch (e3) {}
+        }
+      }
+      try { window.focus(); } catch (e4) {}
     }
 
     function psySendText(text, pressEnter) {
       var s = String(text || '');
       var i = 0;
+      window.__psyInjectLog = true;
+      console.log('[psy] sendText', JSON.stringify(s), 'enter=' + !!pressEnter);
+      psyFocusGame();
       function step() {
+        psyFocusGame();
         if (i < s.length) {
           psySendChar(s.charAt(i++));
-          setTimeout(step, 18);
+          setTimeout(step, 25);
         } else if (pressEnter) {
-          setTimeout(function () { psySendChar('\r'); }, 30);
+          setTimeout(function () {
+            psyFocusGame();
+            psySendChar('\r');
+            setTimeout(function () { window.__psyInjectLog = false; }, 100);
+          }, 40);
+        } else {
+          window.__psyInjectLog = false;
         }
       }
-      // Blur HTML input so game text field can accept keys; refocus canvas.
-      var inp = document.getElementById('cmd-input');
-      if (inp) inp.blur();
-      var canvas = document.getElementById('canvas');
-      if (canvas) {
-        try { canvas.focus(); } catch (e) {}
-      }
-      setTimeout(step, 40);
+      // Short delay so blur/focus settle before keys (esp. after combat "A miss!").
+      setTimeout(step, 60);
     }
 
     function psySubmitCommand(raw) {
       var t = (raw || '').replace(/^\s+|\s+$/g, '');
       if (!t) return;
+      console.log('[psy] submit', t);
       psySendText(t.toUpperCase(), true);
       var inp = document.getElementById('cmd-input');
       if (inp) inp.value = '';
     }
-
     // ---- Ambient / SFX mute via Web Audio gain ----
     window.__psySfxMuted = false;
     window.__psyGain = null;
