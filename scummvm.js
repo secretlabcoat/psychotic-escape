@@ -109,15 +109,6 @@ if (window.location.hash.length > 0) {
         Module["arguments"].push(param);
     })
 }
-// Psychotic! forced launch
-Module["arguments"] = [
-  "--path=/data/games/psychotic",
-  "--auto-detect",
-  "--extrapath=/data",
-  "--themepath=/data",
-  "--iconspath=/data"
-];
-console.log("[psychotic] Module.arguments", Module["arguments"]);
 
 
 // Loading Indicator for WASM Initialization
