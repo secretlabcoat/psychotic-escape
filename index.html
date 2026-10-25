@@ -356,12 +356,12 @@
   </div>
   <div id="controls">
     <div class="btn-row" id="row-dirs">
-      <button type="button" class="psy-btn dir" data-cmd="N">N</button>
-      <button type="button" class="psy-btn dir" data-cmd="S">S</button>
-      <button type="button" class="psy-btn dir" data-cmd="E">E</button>
-      <button type="button" class="psy-btn dir" data-cmd="W">W</button>
-      <button type="button" class="psy-btn dir" data-cmd="U">U</button>
-      <button type="button" class="psy-btn dir" data-cmd="D">D</button>
+      <button type="button" class="psy-btn dir" data-cmd="NORTH">N</button>
+      <button type="button" class="psy-btn dir" data-cmd="SOUTH">S</button>
+      <button type="button" class="psy-btn dir" data-cmd="EAST">E</button>
+      <button type="button" class="psy-btn dir" data-cmd="WEST">W</button>
+      <button type="button" class="psy-btn dir" data-cmd="UP">U</button>
+      <button type="button" class="psy-btn dir" data-cmd="DOWN">D</button>
     </div>
     <div class="owned-pills" id="owned-pills" aria-live="polite"></div>
     <div class="btn-row" id="row-verbs">
@@ -420,7 +420,7 @@
     })();
 
     // Cache-bust for IDBFS-refreshed scummvm.ini (see scummvm.js).
-    window.__PSY_CFG_V = 'k5';
+    window.__PSY_CFG_V = 'k6';
 
     // Match kuendig demo: launch args come from the URL hash.
     // Force software gfx (-g 1x) so iOS Safari WebGL hangs cannot leave
@@ -923,7 +923,7 @@
 
       function loadCatalog() {
         var base = new URL('.', document.baseURI).pathname.replace(/\/?$/, '/');
-        var url = base + 'data/games/psychotic/objects.json?v=k5';
+        var url = base + 'data/games/psychotic/objects.json?v=k6';
         fetch(url).then(function (r) { return r.json(); }).then(function (j) {
           state.catalog.weapons = j.weapons || [];
           state.catalog.items = j.items || [];
