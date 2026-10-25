@@ -145,10 +145,15 @@
       };
     })();
 
-    // Match kuendig demo: launch args come from the URL hash, e.g.
-    // #--path=/data/games/psychotic psychotic
-    if (!window.location.hash) {
-      window.location.hash = '--path=/data/games/psychotic psychotic';
+    // Cache-bust for IDBFS-refreshed scummvm.ini (see scummvm.js).
+    window.__PSY_CFG_V = 'k2';
+
+    // Match kuendig demo: launch args come from the URL hash.
+    // Force software gfx (-g 1x) so iOS Safari WebGL hangs cannot leave
+    // the orange CSS canvas uncovered. CLI overrides any stale IDBFS ini.
+    var wantHash = '--path=/data/games/psychotic -g 1x psychotic';
+    if (!window.location.hash || window.location.hash.indexOf('-g') === -1) {
+      window.location.hash = wantHash;
     }
 
     var Module = {
@@ -189,8 +194,12 @@
         if (typeof httpHideProgressBar === 'function') httpHideProgressBar();
         var hint = document.getElementById('status-hint');
         if (hint) {
-          hint.textContent = 'Tap/click CLICK HERE TO BEGIN twice, then type LOOK.';
-          setTimeout(function () { hint.style.opacity = '0.35'; }, 8000);
+          // WASM ready ≠ first frame painted (orange CSS remains until blit).
+          hint.textContent = 'Starting Psychotic… (software gfx). If this stays orange, hard-refresh.';
+          setTimeout(function () {
+            hint.textContent = 'Tap/click CLICK HERE TO BEGIN twice, then type LOOK.';
+          }, 4000);
+          setTimeout(function () { hint.style.opacity = '0.35'; }, 12000);
         }
       },
       totalDependencies: 0,

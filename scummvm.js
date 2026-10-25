@@ -5005,13 +5005,18 @@ var FS_stdin_getChar_buffer = [];
                   FS.syncfs(true, (err) => err ? reject(err) : resolve());
               });
   
-              // Check if the settings file exists and download a default copy if needed.
-              if (!exists(settingsPath)) {
-                  console.debug('EmscriptenFilesystemFactory_initDefaultConfigFile: Download default scummvm.ini');
-                  const response = await fetch('scummvm.ini');
+              // Always refresh scummvm.ini from the host so deploys take effect.
+              // IDBFS previously kept a stale first-visit copy forever, which left
+              // returning iPhone Safari users stuck on old gfx settings.
+              {
+                  const cfgVer = (typeof window !== 'undefined' && window.__PSY_CFG_V) ? String(window.__PSY_CFG_V) : '1';
+                  console.debug('EmscriptenFilesystemFactory_initDefaultConfigFile: Refresh scummvm.ini v=' + cfgVer);
+                  const response = await fetch('scummvm.ini?v=' + encodeURIComponent(cfgVer), { cache: 'no-store' });
                   if (response.ok) {
                       const text = await response.text();
                       FS.writeFile(settingsPath, text);
+                  } else if (!exists(settingsPath)) {
+                      console.error('Failed to download scummvm.ini', response.status);
                   }
               }
   
