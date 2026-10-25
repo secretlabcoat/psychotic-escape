@@ -3,44 +3,183 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>Psychotic!</title>
   <style>
-    body {
+    :root {
+      --chrome: #1a1a1a;
+      --chrome2: #2a2a2a;
+      --accent: #c45c16;
+      --btn: #3a3a3a;
+      --btn-active: #c45c16;
+      --text: #f0e6d2;
+      --safe-b: env(safe-area-inset-bottom, 0px);
+      --safe-t: env(safe-area-inset-top, 0px);
+      --top-h: 36px;
+      --panel-h: auto;
+    }
+    * { box-sizing: border-box; }
+    html, body {
       margin: 0;
       padding: 0;
-      background-color: #000;
+      height: 100%;
+      width: 100%;
+      background: #000;
       overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
       touch-action: none;
       -webkit-user-select: none;
       user-select: none;
     }
-    .emscripten {
-      padding-right: 0;
-      margin-left: auto;
-      margin-right: auto;
-      display: block;
+    #top-chrome {
+      flex: 0 0 calc(var(--top-h) + var(--safe-t));
+      padding: var(--safe-t) 8px 0;
+      height: calc(var(--top-h) + var(--safe-t));
+      background: var(--chrome);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      z-index: 20;
+      border-bottom: 1px solid #444;
+      /* Covers Mac menubar so it is harder to tap by accident */
+      pointer-events: auto;
     }
-    div.emscripten_border {
-      border: 0;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    #top-chrome .title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      opacity: 0.9;
+      white-space: nowrap;
     }
-    /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
-    canvas.emscripten {
-      border: 0px none;
-      background-color: #cc6600;
-      background-image: none;
+    #top-chrome .top-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    #status-hint {
       position: absolute;
-      top: 0px;
-      left: 0px;
-      margin: 0px;
+      top: calc(var(--top-h) + var(--safe-t) + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      color: #fff;
+      font: 12px/1.3 system-ui, -apple-system, sans-serif;
+      text-shadow: 0 1px 3px #000;
+      z-index: 15;
+      pointer-events: none;
+      max-width: 92%;
+      text-align: center;
+      transition: opacity 0.4s;
+    }
+    #game-wrap {
+      flex: 1 1 auto;
+      position: relative;
+      min-height: 0;
+      width: 100%;
+      background: #000;
+      overflow: hidden;
+    }
+    .emscripten_border {
+      border: 0;
+      position: absolute;
+      inset: 0;
+      padding: 0;
+    }
+    canvas.emscripten {
+      border: 0 none;
+      background-color: #cc6600;
+      position: absolute;
+      top: 0;
+      left: 0;
+      margin: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden;
       display: block;
       touch-action: none;
       outline: none;
+    }
+    #controls {
+      flex: 0 0 auto;
+      background: var(--chrome);
+      border-top: 1px solid #444;
+      padding: 6px 6px calc(6px + var(--safe-b));
+      z-index: 20;
+      touch-action: manipulation;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      justify-content: center;
+      margin-bottom: 5px;
+    }
+    .psy-btn {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid #555;
+      background: var(--btn);
+      color: var(--text);
+      border-radius: 8px;
+      min-height: 36px;
+      min-width: 44px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .psy-btn:active, .psy-btn.active {
+      background: var(--btn-active);
+      border-color: #e07a30;
+    }
+    .psy-btn.dir { min-width: 48px; background: #2c3540; }
+    .psy-btn.verb { background: #3a3228; }
+    .psy-btn.util { background: #2a2a2a; font-size: 12px; }
+    .psy-btn.mute.on {
+      background: #6b1d1d;
+      border-color: #a33;
+    }
+    #cmd-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-top: 2px;
+    }
+    #cmd-input {
+      flex: 1 1 auto;
+      min-width: 0;
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid #666;
+      background: #111;
+      color: #f5f0e6;
+      font-size: 16px; /* iOS: avoid zoom on focus */
+      padding: 0 10px;
+      outline: none;
+      -webkit-user-select: text;
+      user-select: text;
+      touch-action: manipulation;
+    }
+    #cmd-input:focus {
+      border-color: var(--accent);
+    }
+    #cmd-send, #cmd-kb {
+      flex: 0 0 auto;
+      height: 40px;
+      min-width: 56px;
     }
     #download-modal {
       background-color: #F9F2D2;
@@ -52,7 +191,7 @@
       max-width: 90%;
       overflow: hidden;
       position: absolute;
-      bottom: 10%;
+      bottom: 30%;
       transform: translate(-50%, 0);
       width: 400px;
       z-index: 10;
@@ -94,36 +233,66 @@
       height: 100%;
       width: 0%;
     }
-    #status-hint {
-      position: fixed;
-      top: max(8px, env(safe-area-inset-top));
-      left: 50%;
-      transform: translateX(-50%);
-      color: #fff;
-      font: 13px/1.3 system-ui, -apple-system, sans-serif;
-      text-shadow: 0 1px 3px #000;
-      z-index: 5;
-      pointer-events: none;
-      max-width: 92%;
-      text-align: center;
+    @media (min-width: 700px) {
+      #controls { padding-left: 12%; padding-right: 12%; }
     }
   </style>
 </head>
 <body>
-  <div id="status-hint">Loading Psychotic…</div>
-  <div id="download-modal">
-    <div id="download-modal-title"><h3></h3></div>
-    <div id="download-modal-content">
-      <div id="download-modal-progress">
-        <div id="download-modal-progress-fill"></div>
-      </div>
-      <p id="download-modal-progress-text">Downloaded 0 KB / 0 MB</p>
-      <p id="download-modal-speed-text">Download speed: 0 MB/s</p>
+  <div id="top-chrome">
+    <span class="title">Psychotic!</span>
+    <div class="top-actions">
+      <button type="button" class="psy-btn util mute" id="btn-mute" title="Mute looping ambient/SFX">Mute SFX</button>
+      <button type="button" class="psy-btn util" id="btn-more" title="More commands">More</button>
     </div>
   </div>
-  <div class="emscripten_border">
-    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+  <div id="status-hint">Loading Psychotic…</div>
+  <div id="game-wrap">
+    <div id="download-modal">
+      <div id="download-modal-title"><h3></h3></div>
+      <div id="download-modal-content">
+        <div id="download-modal-progress">
+          <div id="download-modal-progress-fill"></div>
+        </div>
+        <p id="download-modal-progress-text">Downloaded 0 KB / 0 MB</p>
+        <p id="download-modal-speed-text">Download speed: 0 MB/s</p>
+      </div>
+    </div>
+    <div class="emscripten_border">
+      <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+    </div>
   </div>
+  <div id="controls">
+    <div class="btn-row" id="row-dirs">
+      <button type="button" class="psy-btn dir" data-cmd="N">N</button>
+      <button type="button" class="psy-btn dir" data-cmd="S">S</button>
+      <button type="button" class="psy-btn dir" data-cmd="E">E</button>
+      <button type="button" class="psy-btn dir" data-cmd="W">W</button>
+      <button type="button" class="psy-btn dir" data-cmd="U">U</button>
+      <button type="button" class="psy-btn dir" data-cmd="D">D</button>
+    </div>
+    <div class="btn-row" id="row-verbs">
+      <button type="button" class="psy-btn verb" data-cmd="LOOK">LOOK</button>
+      <button type="button" class="psy-btn verb" data-partial="GET ">GET</button>
+      <button type="button" class="psy-btn verb" data-partial="OPEN ">OPEN</button>
+      <button type="button" class="psy-btn verb" data-cmd="SEARCH">SEARCH</button>
+      <button type="button" class="psy-btn verb" data-cmd="CLOSE">CLOSE</button>
+    </div>
+    <div class="btn-row" id="row-more" hidden>
+      <button type="button" class="psy-btn util" data-cmd="INVENTORY">INV</button>
+      <button type="button" class="psy-btn util" data-cmd="STATUS">STATUS</button>
+      <button type="button" class="psy-btn util" data-cmd="REST">REST</button>
+      <button type="button" class="psy-btn util" data-partial="">Weapons…</button>
+      <button type="button" class="psy-btn util" data-cmd="LOOK">L</button>
+    </div>
+    <div id="cmd-row">
+      <input id="cmd-input" type="text" enterkeyhint="send" autocomplete="off" autocorrect="off"
+             autocapitalize="characters" spellcheck="false" placeholder="Type LOOK, GET door…" />
+      <button type="button" class="psy-btn" id="cmd-send">Send</button>
+      <button type="button" class="psy-btn util" id="cmd-kb" title="Show phone keyboard">⌨</button>
+    </div>
+  </div>
+
   <script>
     // GitHub Pages project subpath: ScummVM HTTP FS uses absolute /data/... URLs.
     (function () {
@@ -146,7 +315,7 @@
     })();
 
     // Cache-bust for IDBFS-refreshed scummvm.ini (see scummvm.js).
-    window.__PSY_CFG_V = 'k2';
+    window.__PSY_CFG_V = 'k3';
 
     // Match kuendig demo: launch args come from the URL hash.
     // Force software gfx (-g 1x) so iOS Safari WebGL hangs cannot leave
@@ -155,6 +324,252 @@
     if (!window.location.hash || window.location.hash.indexOf('-g') === -1) {
       window.location.hash = wantHash;
     }
+
+    // ---- Hybrid UI: key injection into ScummVM (SDL3 / Emscripten) ----
+    function psyMakeKeyEvent(type, key, keyCode) {
+      var ev;
+      try {
+        ev = new KeyboardEvent(type, {
+          key: key,
+          code: key.length === 1 ? 'Key' + key.toUpperCase() : (key === 'Enter' ? 'Enter' : 'Unidentified'),
+          keyCode: keyCode,
+          which: keyCode,
+          charCode: type === 'keypress' ? keyCode : 0,
+          bubbles: true,
+          cancelable: true,
+          view: window
+        });
+      } catch (e) {
+        ev = document.createEvent('Event');
+        ev.initEvent(type, true, true);
+      }
+      // Safari / Chromium often ignore keyCode in the constructor.
+      try {
+        Object.defineProperty(ev, 'keyCode', { get: function () { return keyCode; } });
+        Object.defineProperty(ev, 'which', { get: function () { return keyCode; } });
+        Object.defineProperty(ev, 'charCode', { get: function () { return type === 'keypress' ? keyCode : 0; } });
+        Object.defineProperty(ev, 'key', { get: function () { return key; } });
+      } catch (e2) {}
+      return ev;
+    }
+
+    function psyDispatchKey(type, key, keyCode) {
+      var canvas = document.getElementById('canvas');
+      var ev = psyMakeKeyEvent(type, key, keyCode);
+      // Prefer Module.SDL.receiveEvent when present (legacy SDL1 path).
+      try {
+        if (typeof Module !== 'undefined' && Module.SDL && typeof Module.SDL.receiveEvent === 'function') {
+          Module.SDL.receiveEvent(ev);
+          return;
+        }
+      } catch (e) {}
+      // SDL3 listens on document / window / canvas via Emscripten callbacks.
+      var targets = [window, document, canvas];
+      for (var i = 0; i < targets.length; i++) {
+        if (targets[i]) {
+          try { targets[i].dispatchEvent(ev); } catch (e) {}
+        }
+      }
+    }
+
+    function psySendChar(ch) {
+      var key, code;
+      if (ch === '\n' || ch === '\r') {
+        key = 'Enter';
+        code = 13;
+      } else if (ch === ' ') {
+        key = ' ';
+        code = 32;
+      } else {
+        key = ch;
+        code = ch.toUpperCase().charCodeAt(0);
+      }
+      psyDispatchKey('keydown', key, code);
+      if (code >= 32) psyDispatchKey('keypress', key, code);
+      psyDispatchKey('keyup', key, code);
+    }
+
+    function psySendText(text, pressEnter) {
+      var s = String(text || '');
+      var i = 0;
+      function step() {
+        if (i < s.length) {
+          psySendChar(s.charAt(i++));
+          setTimeout(step, 18);
+        } else if (pressEnter) {
+          setTimeout(function () { psySendChar('\r'); }, 30);
+        }
+      }
+      // Blur HTML input so game text field can accept keys; refocus canvas.
+      var inp = document.getElementById('cmd-input');
+      if (inp) inp.blur();
+      var canvas = document.getElementById('canvas');
+      if (canvas) {
+        try { canvas.focus(); } catch (e) {}
+      }
+      setTimeout(step, 40);
+    }
+
+    function psySubmitCommand(raw) {
+      var t = (raw || '').replace(/^\s+|\s+$/g, '');
+      if (!t) return;
+      psySendText(t.toUpperCase(), true);
+      var inp = document.getElementById('cmd-input');
+      if (inp) inp.value = '';
+    }
+
+    // ---- Ambient / SFX mute via Web Audio gain ----
+    window.__psySfxMuted = false;
+    window.__psyGain = null;
+
+    function psyEnsureGain() {
+      try {
+        var SDL3 = (typeof Module !== 'undefined') ? Module.SDL3 : null;
+        if (!SDL3 || !SDL3.audioContext) return null;
+        var ctx = SDL3.audioContext;
+        var sp = SDL3.audio_playback && SDL3.audio_playback.scriptProcessorNode;
+        if (!sp) return window.__psyGainWired || null;
+        if (window.__psyGainWired) {
+          window.__psyGainWired.gain.value = window.__psySfxMuted ? 0 : 1;
+          return window.__psyGainWired;
+        }
+        var gain = ctx.createGain();
+        gain.gain.value = window.__psySfxMuted ? 0 : 1;
+        try { sp.disconnect(); } catch (e) {}
+        try {
+          sp.connect(gain);
+          gain.connect(ctx.destination);
+        } catch (e2) {
+          try { sp.connect(ctx.destination); } catch (e3) {}
+          return null;
+        }
+        window.__psyGainWired = gain;
+        window.__psyGain = gain;
+        return gain;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function psySetMuted(muted) {
+      window.__psySfxMuted = !!muted;
+      var btn = document.getElementById('btn-mute');
+      if (btn) {
+        btn.classList.toggle('on', window.__psySfxMuted);
+        btn.textContent = window.__psySfxMuted ? 'Unmute SFX' : 'Mute SFX';
+      }
+      var gain = psyEnsureGain();
+      if (gain) {
+        gain.gain.value = window.__psySfxMuted ? 0 : 1;
+        return;
+      }
+      // Fallback: suspend / resume whole context (mutes everything).
+      try {
+        var SDL3 = Module.SDL3;
+        if (SDL3 && SDL3.audioContext) {
+          if (window.__psySfxMuted) SDL3.audioContext.suspend();
+          else SDL3.audioContext.resume();
+        }
+      } catch (e) {}
+    }
+
+    // Remember the AudioContext ScummVM creates (SDL3); gain is wired in psyEnsureGain.
+    (function () {
+      var OrigAC = window.AudioContext || window.webkitAudioContext;
+      if (!OrigAC) return;
+      function PatchedAC(opts) {
+        var ctx = (opts !== undefined) ? new OrigAC(opts) : new OrigAC();
+        window.__psyAudioCtx = ctx;
+        return ctx;
+      }
+      window.__PsyOrigAC = OrigAC;
+      PatchedAC.prototype = OrigAC.prototype;
+      window.AudioContext = PatchedAC;
+      if (window.webkitAudioContext) window.webkitAudioContext = PatchedAC;
+    })();
+
+    // ---- Wire UI ----
+    (function setupHybridUI() {
+      var input = document.getElementById('cmd-input');
+      var sendBtn = document.getElementById('cmd-send');
+      var kbBtn = document.getElementById('cmd-kb');
+      var moreBtn = document.getElementById('btn-more');
+      var moreRow = document.getElementById('row-more');
+      var muteBtn = document.getElementById('btn-mute');
+
+      function onSend() { psySubmitCommand(input.value); }
+      sendBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        onSend();
+      });
+      input.addEventListener('keydown', function (e) {
+        // Stop ScummVM from also seeing these while typing in the HTML field.
+        e.stopPropagation();
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          onSend();
+        }
+      });
+      input.addEventListener('keyup', function (e) { e.stopPropagation(); });
+      input.addEventListener('keypress', function (e) { e.stopPropagation(); });
+
+      kbBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        input.focus();
+      });
+
+      moreBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        var hide = !moreRow.hidden;
+        moreRow.hidden = hide;
+        moreBtn.textContent = hide ? 'More' : 'Less';
+      });
+
+      muteBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        psySetMuted(!window.__psySfxMuted);
+      });
+
+      function bindButtons(root) {
+        var buttons = root.querySelectorAll('.psy-btn[data-cmd], .psy-btn[data-partial]');
+        for (var i = 0; i < buttons.length; i++) {
+          (function (btn) {
+            btn.addEventListener('click', function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              if (btn.hasAttribute('data-cmd')) {
+                psySubmitCommand(btn.getAttribute('data-cmd'));
+              } else if (btn.hasAttribute('data-partial')) {
+                var partial = btn.getAttribute('data-partial');
+                if (partial === '' && btn.textContent.indexOf('Weapon') !== -1) {
+                  input.value = '';
+                  input.placeholder = 'Type weapon use, e.g. SWING FIST';
+                  input.focus();
+                  return;
+                }
+                input.value = partial;
+                input.focus();
+                // Place caret at end for completing GET/OPEN.
+                try {
+                  var len = input.value.length;
+                  input.setSelectionRange(len, len);
+                } catch (err) {}
+              }
+            });
+          })(buttons[i]);
+        }
+      }
+      bindButtons(document.getElementById('controls'));
+      bindButtons(document.getElementById('top-chrome'));
+
+      // After audio starts, try to insert gain (ambient laugh is SFX in WAGE).
+      var tries = 0;
+      var timer = setInterval(function () {
+        tries++;
+        psyEnsureGain();
+        if (window.__psyGainWired || tries > 40) clearInterval(timer);
+      }, 500);
+    })();
 
     var Module = {
       preRun: [],
@@ -194,13 +609,15 @@
         if (typeof httpHideProgressBar === 'function') httpHideProgressBar();
         var hint = document.getElementById('status-hint');
         if (hint) {
-          // WASM ready ≠ first frame painted (orange CSS remains until blit).
-          hint.textContent = 'Starting Psychotic… (software gfx). If this stays orange, hard-refresh.';
+          hint.textContent = 'Tap BEGIN, then LOOK — or use the buttons / type below.';
           setTimeout(function () {
-            hint.textContent = 'Tap/click CLICK HERE TO BEGIN twice, then type LOOK.';
-          }, 4000);
-          setTimeout(function () { hint.style.opacity = '0.35'; }, 12000);
+            hint.textContent = 'Buttons + keyboard at bottom. Mute SFX stops the looping laugh.';
+          }, 5000);
+          setTimeout(function () { hint.style.opacity = '0.3'; }, 14000);
         }
+        // Re-wire gain once SDL3 audio exists.
+        setTimeout(function () { psyEnsureGain(); }, 1500);
+        setTimeout(function () { psyEnsureGain(); }, 4000);
       },
       totalDependencies: 0,
       monitorRunDependencies: function (left) {
