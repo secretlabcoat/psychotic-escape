@@ -35,7 +35,7 @@
   </style>
 </head>
 <body>
-  <div id="hint">Loading Psychotic…</div>
+  <div id="hint">Psychotic!</div>
   <div id="download-modal">
     <div id="download-modal-title"><h3></h3></div>
     <div id="download-modal-content">
@@ -48,6 +48,26 @@
     <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
   </div>
   <script>
+    // GitHub Pages (and any subpath host): ScummVM HTTP FS fetches absolute /data/... URLs.
+    (function () {
+      var base = new URL('.', document.baseURI).pathname.replace(/\/$/, '');
+      if (!base || base === '/') return;
+      var orig = window.fetch.bind(window);
+      window.fetch = function (input, init) {
+        if (typeof input === 'string' && input.charAt(0) === '/' && input.indexOf('/data') === 0) {
+          input = base + input;
+        } else if (typeof Request !== 'undefined' && input instanceof Request) {
+          try {
+            var u = new URL(input.url);
+            if (u.origin === location.origin && u.pathname.indexOf('/data') === 0) {
+              input = new Request(base + u.pathname + u.search + u.hash, input);
+            }
+          } catch (e) {}
+        }
+        return orig(input, init);
+      };
+    })();
+
     var Module = {
       arguments: [
         '--path=/data/games/psychotic',
