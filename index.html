@@ -1,143 +1,104 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Psychotic: The Escape</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Psychotic!</title>
   <style>
-    :root {
-      --bg: #0c0b0a;
-      --panel: #1a1714;
-      --ink: #f2e8d5;
-      --muted: #a89880;
-      --accent: #e23d2b;
-      --line: #3a3228;
+    html, body { margin: 0; padding: 0; background: #0a0a0a; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; }
+    .emscripten_border {
+      position: fixed; inset: 0;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      min-height: 100%;
-      background: radial-gradient(1200px 600px at 50% -10%, #2a1a14, var(--bg));
-      color: var(--ink);
-      font-family: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    canvas.emscripten {
+      border: 0; background: #111;
+      position: absolute; top: 0; left: 0; margin: 0;
+      width: 100%; height: 100%; display: block;
     }
-    .wrap {
-      max-width: 920px;
-      margin: 0 auto;
-      padding: 28px 16px 48px;
+    #download-modal {
+      background: #1a1210; border: 1px solid #5c2a2a; border-radius: 10px;
+      display: none; left: 50%; bottom: 12%; transform: translateX(-50%);
+      position: absolute; width: min(400px, 90%); z-index: 10; color: #f2e6e0;
+      box-shadow: 0 8px 32px rgba(0,0,0,.55);
     }
-    header h1 {
-      margin: 0 0 6px;
-      font-size: 1.55rem;
-      letter-spacing: 0.02em;
-      font-weight: 700;
-    }
-    header p {
-      margin: 0 0 18px;
-      color: var(--muted);
-      line-height: 1.45;
-      max-width: 62ch;
-      font-size: 0.92rem;
-    }
-    .screen {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.45);
-    }
-    .pcejs-loading-status {
-      text-align: center;
-      color: var(--muted);
-      padding: 8px;
-      font-size: 0.85rem;
-    }
-    .pcejs-loading-status progress {
-      width: min(280px, 70%);
-      margin-left: 10px;
-      vertical-align: middle;
-    }
-    .canvas-wrap {
-      display: flex;
-      justify-content: center;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-      min-height: 360px;
-    }
-    .pcejs-canvas {
-      display: block;
-      image-rendering: pixelated;
-      cursor: none;
-      max-width: 100%;
-      height: auto;
-    }
-    .help {
-      display: grid;
-      gap: 10px;
-      margin-top: 18px;
-      padding: 14px 16px;
-      border: 1px dashed var(--line);
-      border-radius: 10px;
-      color: var(--muted);
-      font-size: 0.86rem;
-      line-height: 1.45;
-    }
-    .help strong { color: var(--ink); }
-    .help ol { margin: 6px 0 0; padding-left: 1.2rem; }
-    .badge {
-      display: inline-block;
-      margin-bottom: 10px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: rgba(226,61,43,0.15);
-      color: #ff8f7e;
-      font-size: 0.72rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-    footer {
-      margin-top: 22px;
-      color: #6e6254;
-      font-size: 0.75rem;
-      line-height: 1.4;
+    #download-modal-title { background: #3a1818; margin: 0; padding: 10px 16px; text-align: center; border-radius: 10px 10px 0 0; }
+    #download-modal-title h3 { margin: 0; font-size: 14px; font-weight: 600; }
+    #download-modal-content { padding: 16px; }
+    #download-modal p { margin: 8px 0; font-size: 12px; color: #d9c8c0; }
+    #download-modal-progress { background: #2a1a18; border-radius: 4px; height: 12px; overflow: hidden; }
+    #download-modal-progress-fill { background: #c43c3c; height: 100%; width: 0%; }
+    #hint {
+      position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+      color: #a89890; font-size: 12px; z-index: 5; pointer-events: none;
+      text-shadow: 0 1px 2px #000; opacity: .9; max-width: 90%; text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="badge">1987 · World Builder · your 2000 disk</div>
-      <h1>Psychotic: The Escape</h1>
-      <p>
-        Classic Mac adventure in your browser. It boots straight into
-        <strong>Psychotic!</strong> — you are Jason, escaped, unarmed, and in a hurry.
-      </p>
-    </header>
-
-    <div class="screen">
-      <div class="pcejs-loading-status">Downloading Mac system &amp; game disk…</div>
-      <div class="canvas-wrap">
-        <canvas class="pcejs-canvas" oncontextmenu="event.preventDefault()"></canvas>
-      </div>
+  <div id="hint">Loading Psychotic…</div>
+  <div id="download-modal">
+    <div id="download-modal-title"><h3></h3></div>
+    <div id="download-modal-content">
+      <div id="download-modal-progress"><div id="download-modal-progress-fill"></div></div>
+      <p id="download-modal-progress-text">Downloaded 0 KB / 0 MB</p>
+      <p id="download-modal-speed-text">Download speed: 0 MB/s</p>
     </div>
-
-    <div class="help">
-      <div><strong>How to play</strong></div>
-      <ol>
-        <li>Wait for the Mac to boot — <strong>Psychotic!</strong> opens on its own.</li>
-        <li>Move your mouse over the screen; the Mac pointer follows (no click-to-capture).</li>
-        <li>Type two-word commands like <code>LOOK</code>, <code>GO WEST</code>, <code>OPEN GATE</code>.</li>
-        <li>Use the COMMANDS and WEAPONS menus when they appear. Press Esc if a dialog sticks.</li>
-      </ol>
-      <div>Tone warning: 1980s underground freeware — dark, crude, intentionally offensive.</div>
-    </div>
-
-    <footer>
-      Emulated Mac Plus via PCE.js. Game extracted from your StuffIt archive
-      (latest 2000 World Builder build). Not affiliated with Anarchists United.
-    </footer>
   </div>
-  <script src="bundle.js"></script>
+  <div class="emscripten_border">
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+  </div>
+  <script>
+    var Module = {
+      arguments: [
+        '--path=/data/games/psychotic',
+        '--auto-detect',
+        '--extrapath=/data',
+        '--themepath=/data',
+        '--iconspath=/data'
+      ],
+      preRun: [],
+      postRun: [],
+      print: function (text) {
+        console.log(text);
+        var h = document.getElementById('hint');
+        if (h && text && text.length < 120) h.textContent = text;
+      },
+      printErr: function (text) { console.error(text); },
+      canvas: (function () {
+        var canvas = document.getElementById('canvas');
+        canvas.addEventListener('webglcontextlost', function (e) {
+          alert('WebGL context lost — reload the page.');
+          e.preventDefault();
+        }, false);
+        return canvas;
+      })(),
+      setStatus: function (text) {
+        if (!Module.setStatus.last) Module.setStatus.last = '';
+        document.getElementById('download-modal').style.display = 'block';
+        if (text === Module.setStatus.last) return;
+        Module.setStatus.last = text;
+        if (text && text.length > 0) {
+          document.getElementById('download-modal-title').firstChild.innerHTML = text;
+          document.getElementById('hint').textContent = text;
+        } else {
+          document.getElementById('download-modal').style.display = 'none';
+          document.getElementById('download-modal-progress-fill').style.width = '0%';
+        }
+      },
+      onRuntimeInitialized: function () {
+        if (typeof httpHideProgressBar === 'function') httpHideProgressBar();
+        document.getElementById('hint').textContent =
+          'Psychotic! — click the screen, then CLICK HERE TO BEGIN. Type LOOK and press Enter.';
+      },
+      totalDependencies: 0,
+      monitorRunDependencies: function (left) {
+        this.totalDependencies = Math.max(this.totalDependencies, left);
+        Module.setStatus(left
+          ? 'Preparing… (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')'
+          : 'All downloads complete.');
+      }
+    };
+  </script>
+  <script src="scummvm.js"></script>
 </body>
 </html>
