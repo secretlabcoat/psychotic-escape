@@ -10,7 +10,7 @@ macplus({
     'macplus-pcex.rom',
     'mac-plus.rom',
     'hd1.qed',
-    'psychotic-hd.img',
+    'psychotic.dsk',
     'pce-config.cfg',
   ],
   locateFile: function (path) {
