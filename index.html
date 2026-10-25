@@ -2,24 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>Psychotic!</title>
   <style>
-    html, body { margin: 0; padding: 0; background: #0a0a0a; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; }
+    html, body {
+      margin: 0; padding: 0; background: #1a0c0a; height: 100%; height: 100dvh;
+      overflow: hidden; font-family: system-ui, -apple-system, sans-serif;
+      touch-action: none; -webkit-user-select: none; user-select: none;
+    }
     .emscripten_border {
       position: fixed; inset: 0;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      box-sizing: border-box;
     }
+    /* No padding on canvas itself — mouse/touch coords break otherwise */
     canvas.emscripten {
-      border: 0; background: #111;
+      border: 0; background: #2a1510;
       position: absolute; top: 0; left: 0; margin: 0;
       width: 100%; height: 100%; display: block;
+      touch-action: none; outline: none;
     }
     #download-modal {
       background: #1a1210; border: 1px solid #5c2a2a; border-radius: 10px;
       display: none; left: 50%; bottom: 12%; transform: translateX(-50%);
       position: absolute; width: min(400px, 90%); z-index: 10; color: #f2e6e0;
-      box-shadow: 0 8px 32px rgba(0,0,0,.55);
+      box-shadow: 0 8px 32px rgba(0,0,0,.55); pointer-events: none;
     }
     #download-modal-title { background: #3a1818; margin: 0; padding: 10px 16px; text-align: center; border-radius: 10px 10px 0 0; }
     #download-modal-title h3 { margin: 0; font-size: 14px; font-weight: 600; }
@@ -28,14 +37,31 @@
     #download-modal-progress { background: #2a1a18; border-radius: 4px; height: 12px; overflow: hidden; }
     #download-modal-progress-fill { background: #c43c3c; height: 100%; width: 0%; }
     #hint {
-      position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
-      color: #a89890; font-size: 12px; z-index: 5; pointer-events: none;
-      text-shadow: 0 1px 2px #000; opacity: .9; max-width: 90%; text-align: center;
+      position: fixed; top: max(10px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+      color: #e8d4cc; font-size: 13px; z-index: 5; pointer-events: none;
+      text-shadow: 0 1px 3px #000; opacity: .95; max-width: 92%; text-align: center;
+      white-space: pre-line;
     }
+    #start-gate {
+      position: fixed; inset: 0; z-index: 20;
+      background: rgba(10, 6, 5, 0.72);
+      display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #start-gate button {
+      appearance: none; border: 1px solid #8a3a3a; background: #3a1818;
+      color: #f2e6e0; font: 600 16px/1.2 system-ui, -apple-system, sans-serif;
+      padding: 16px 28px; border-radius: 12px;
+      box-shadow: 0 8px 28px rgba(0,0,0,.45);
+    }
+    #start-gate.hidden { display: none; }
   </style>
 </head>
 <body>
-  <div id="hint">Psychotic!</div>
+  <div id="hint">Loading Psychotic…</div>
+  <div id="start-gate" class="hidden" aria-hidden="true">
+    <button type="button" id="start-btn">Tap to start Psychotic!</button>
+  </div>
   <div id="download-modal">
     <div id="download-modal-title"><h3></h3></div>
     <div id="download-modal-content">
@@ -48,7 +74,7 @@
     <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
   </div>
   <script>
-    // GitHub Pages (and any subpath host): ScummVM HTTP FS fetches absolute /data/... URLs.
+    // GitHub Pages project subpath: ScummVM HTTP FS fetches absolute /data/... URLs.
     (function () {
       var base = new URL('.', document.baseURI).pathname.replace(/\/$/, '');
       if (!base || base === '/') return;
@@ -68,6 +94,48 @@
       };
     })();
 
+    function isMobileSafari() {
+      var ua = navigator.userAgent || '';
+      var iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      var webkit = /WebKit/.test(ua);
+      return iOS && webkit;
+    }
+
+    function nudgeCanvasLayout() {
+      try {
+        window.dispatchEvent(new Event('resize'));
+      } catch (e) {}
+      var canvas = document.getElementById('canvas');
+      if (canvas) {
+        // Nudge layout after mobile browser chrome settles
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        try { canvas.focus(); } catch (e) {}
+      }
+    }
+
+    function showStartGate() {
+      var gate = document.getElementById('start-gate');
+      gate.classList.remove('hidden');
+      gate.setAttribute('aria-hidden', 'false');
+      document.getElementById('hint').textContent =
+        'Loaded. Tap Start, then tap CLICK HERE TO BEGIN twice.';
+    }
+
+    function hideStartGate() {
+      var gate = document.getElementById('start-gate');
+      gate.classList.add('hidden');
+      gate.setAttribute('aria-hidden', 'true');
+      nudgeCanvasLayout();
+      setTimeout(nudgeCanvasLayout, 250);
+      setTimeout(nudgeCanvasLayout, 1000);
+    }
+
+    document.getElementById('start-btn').addEventListener('click', function (e) {
+      e.preventDefault();
+      hideStartGate();
+    }, { passive: false });
+
     var Module = {
       arguments: [
         '--path=/data/games/psychotic',
@@ -79,9 +147,14 @@
       preRun: [],
       postRun: [],
       print: function (text) {
-        console.log(text);
+        if (text) console.log(text);
+        // Keep the on-screen hint human — ignore engine chatter
+        if (!text) return;
+        var noise = /wage:|Macintosh\/|\/data\/|WageEngine|WARNING|Debugger|Added game|Running /i;
+        if (noise.test(text)) return;
+        if (text.length >= 120) return;
         var h = document.getElementById('hint');
-        if (h && text && text.length < 120) h.textContent = text;
+        if (h) h.textContent = text;
       },
       printErr: function (text) { console.error(text); },
       canvas: (function () {
@@ -107,8 +180,14 @@
       },
       onRuntimeInitialized: function () {
         if (typeof httpHideProgressBar === 'function') httpHideProgressBar();
-        document.getElementById('hint').textContent =
-          'Psychotic! — click the screen, then CLICK HERE TO BEGIN. Type LOOK and press Enter.';
+        nudgeCanvasLayout();
+        if (isMobileSafari()) {
+          showStartGate();
+        } else {
+          document.getElementById('hint').textContent =
+            'Psychotic! — click the screen, then CLICK HERE TO BEGIN. Type LOOK and press Enter.';
+          setTimeout(nudgeCanvasLayout, 300);
+        }
       },
       totalDependencies: 0,
       monitorRunDependencies: function (left) {
@@ -118,6 +197,13 @@
           : 'All downloads complete.');
       }
     };
+
+    window.addEventListener('orientationchange', function () {
+      setTimeout(nudgeCanvasLayout, 300);
+    });
+    window.addEventListener('resize', function () {
+      // Browser's own listener handles GL; we only re-focus
+    });
   </script>
   <script src="scummvm.js"></script>
 </body>
