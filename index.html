@@ -410,6 +410,48 @@
       background: #3a2218;
       border-color: #e07a30;
     }
+    .owned-icons.picking {
+      outline: 2px solid #e07a30;
+      outline-offset: 2px;
+      border-radius: 10px;
+      padding: 4px;
+      background: #2a1c12;
+    }
+    .owned-icons.picking:empty {
+      display: flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+    }
+    .psy-btn.pending {
+      background: #c45c16 !important;
+      border-color: #f0a060 !important;
+      box-shadow: 0 0 0 2px rgba(224, 122, 48, 0.55);
+    }
+    #pick-hint {
+      display: none;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #f0c090;
+      margin: 0 0 6px;
+      min-height: 18px;
+      letter-spacing: 0.02em;
+    }
+    #pick-hint.on { display: block; }
+    #pick-hint button {
+      appearance: none;
+      border: 1px solid #888;
+      background: #333;
+      color: #f0e6d2;
+      border-radius: 8px;
+      padding: 4px 10px;
+      margin-left: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      min-height: 32px;
+      touch-action: manipulation;
+    }
   </style>
 </head>
 <body>
@@ -437,6 +479,7 @@
     </div>
   </div>
   <div id="controls">
+    <p id="pick-hint" aria-live="polite"></p>
     <div class="btn-row" id="row-dirs">
       <button type="button" class="psy-btn dir" data-cmd="NORTH" title="North" aria-label="North"><span class="ic" aria-hidden="true">⬆️</span><span class="lb">N</span></button>
       <button type="button" class="psy-btn dir" data-cmd="SOUTH" title="South" aria-label="South"><span class="ic" aria-hidden="true">⬇️</span><span class="lb">S</span></button>
@@ -444,32 +487,47 @@
       <button type="button" class="psy-btn dir" data-cmd="WEST" title="West" aria-label="West"><span class="ic" aria-hidden="true">⬅️</span><span class="lb">W</span></button>
       <button type="button" class="psy-btn dir" data-cmd="UP" title="Up" aria-label="Up"><span class="ic" aria-hidden="true">🔼</span><span class="lb">Up</span></button>
       <button type="button" class="psy-btn dir" data-cmd="DOWN" title="Down" aria-label="Down"><span class="ic" aria-hidden="true">🔽</span><span class="lb">Down</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="ENTER" title="Enter" aria-label="Enter"><span class="ic" aria-hidden="true">🚪</span><span class="lb">Enter</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="EXIT" title="Exit" aria-label="Exit"><span class="ic" aria-hidden="true">🚶</span><span class="lb">Exit</span></button>
     </div>
     <div class="owned-icons" id="owned-icons" aria-live="polite" aria-label="Carried items"></div>
     <div class="btn-row" id="row-verbs">
       <button type="button" class="psy-btn verb" data-cmd="LOOK" title="Look" aria-label="Look"><span class="ic" aria-hidden="true">👁️</span><span class="lb">Look</span></button>
-      <button type="button" class="psy-btn verb" data-partial="GET " title="Get" aria-label="Get"><span class="ic" aria-hidden="true">✊</span><span class="lb">Get</span></button>
-      <button type="button" class="psy-btn verb" data-partial="OPEN " title="Open" aria-label="Open"><span class="ic" aria-hidden="true">🚪</span><span class="lb">Open</span></button>
+      <button type="button" class="psy-btn verb" data-pick="GET" title="Get — then pick what" aria-label="Get"><span class="ic" aria-hidden="true">✊</span><span class="lb">Get</span></button>
+      <button type="button" class="psy-btn verb" data-pick="OPEN" title="Open — then pick what" aria-label="Open"><span class="ic" aria-hidden="true">🔓</span><span class="lb">Open</span></button>
       <button type="button" class="psy-btn verb" data-cmd="SEARCH" title="Search" aria-label="Search"><span class="ic" aria-hidden="true">🔍</span><span class="lb">Search</span></button>
       <button type="button" class="psy-btn verb" data-cmd="CLOSE" title="Close" aria-label="Close"><span class="ic" aria-hidden="true">🔒</span><span class="lb">Close</span></button>
-      <button type="button" class="psy-btn util" id="btn-inv" title="Inventory" aria-label="Inventory"><span class="ic" aria-hidden="true">🎒</span><span class="lb">Inv</span></button>
-      <button type="button" class="psy-btn util" id="btn-weapons" title="Weapons" aria-label="Weapons"><span class="ic" aria-hidden="true">⚔️</span><span class="lb">Arms</span></button>
+      <button type="button" class="psy-btn verb" data-pick="DROP" title="Drop — then pick item" aria-label="Drop"><span class="ic" aria-hidden="true">📥</span><span class="lb">Drop</span></button>
+      <button type="button" class="psy-btn verb" data-pick="USE" title="Use — then pick item" aria-label="Use"><span class="ic" aria-hidden="true">🛠️</span><span class="lb">Use</span></button>
+      <button type="button" class="psy-btn verb" data-pick="READ" title="Read — then pick what" aria-label="Read"><span class="ic" aria-hidden="true">📖</span><span class="lb">Read</span></button>
+      <button type="button" class="psy-btn util" id="btn-inv" title="Inventory sheet" aria-label="Inventory"><span class="ic" aria-hidden="true">🎒</span><span class="lb">Inv</span></button>
+      <button type="button" class="psy-btn util" id="btn-weapons" title="Weapons sheet" aria-label="Weapons"><span class="ic" aria-hidden="true">⚔️</span><span class="lb">Arms</span></button>
     </div>
     <div class="btn-row" id="row-combat" aria-label="Combat">
       <button type="button" class="psy-btn combat" data-cmd="AIM HEAD" title="Aim head" aria-label="Aim head"><span class="ic" aria-hidden="true">🎯</span><span class="lb">Head</span></button>
-      <button type="button" class="psy-btn combat" data-cmd="AIM BODY" title="Aim body" aria-label="Aim body"><span class="ic" aria-hidden="true">🎯</span><span class="lb">Body</span></button>
+      <button type="button" class="psy-btn combat" data-cmd="AIM CHEST" title="Aim chest" aria-label="Aim chest"><span class="ic" aria-hidden="true">🎯</span><span class="lb">Chest</span></button>
       <button type="button" class="psy-btn combat" data-cmd="AIM SIDE" title="Aim side" aria-label="Aim side"><span class="ic" aria-hidden="true">🎯</span><span class="lb">Side</span></button>
-      <button type="button" class="psy-btn combat" data-cmd="SWING" title="Swing" aria-label="Swing"><span class="ic" aria-hidden="true">🗡️</span><span class="lb">Swing</span></button>
-      <button type="button" class="psy-btn combat" data-cmd="THROW" title="Throw" aria-label="Throw"><span class="ic" aria-hidden="true">💣</span><span class="lb">Throw</span></button>
-      <button type="button" class="psy-btn combat" data-cmd="FIRE" title="Fire" aria-label="Fire"><span class="ic" aria-hidden="true">🔫</span><span class="lb">Fire</span></button>
-      <button type="button" class="psy-btn combat" data-cmd="SHOOT" title="Shoot" aria-label="Shoot"><span class="ic" aria-hidden="true">💥</span><span class="lb">Shoot</span></button>
-      <button type="button" class="psy-btn combat" data-cmd="POINT" title="Point" aria-label="Point"><span class="ic" aria-hidden="true">👉</span><span class="lb">Point</span></button>
+      <button type="button" class="psy-btn combat" data-pick="SWING" title="Swing — then pick weapon" aria-label="Swing"><span class="ic" aria-hidden="true">🗡️</span><span class="lb">Swing</span></button>
+      <button type="button" class="psy-btn combat" data-pick="THROW" title="Throw — then pick weapon" aria-label="Throw"><span class="ic" aria-hidden="true">💣</span><span class="lb">Throw</span></button>
+      <button type="button" class="psy-btn combat" data-pick="FIRE" title="Fire — then pick gun" aria-label="Fire"><span class="ic" aria-hidden="true">🔫</span><span class="lb">Fire</span></button>
+      <button type="button" class="psy-btn combat" data-pick="SHOOT" title="Shoot — then pick gun" aria-label="Shoot"><span class="ic" aria-hidden="true">💥</span><span class="lb">Shoot</span></button>
+      <button type="button" class="psy-btn combat" data-pick="POINT" title="Point — then pick item" aria-label="Point"><span class="ic" aria-hidden="true">👉</span><span class="lb">Point</span></button>
+      <button type="button" class="psy-btn combat" data-pick="KILL" title="Kill — then pick target" aria-label="Kill"><span class="ic" aria-hidden="true">☠️</span><span class="lb">Kill</span></button>
     </div>
     <div class="btn-row" id="row-more" hidden>
       <button type="button" class="psy-btn util" data-cmd="INVENTORY" title="Inventory command" aria-label="Inventory command"><span class="ic" aria-hidden="true">📋</span><span class="lb">Inv cmd</span></button>
       <button type="button" class="psy-btn util" data-cmd="STATUS" title="Status" aria-label="Status"><span class="ic" aria-hidden="true">❤️</span><span class="lb">Status</span></button>
       <button type="button" class="psy-btn util" data-cmd="REST" title="Rest" aria-label="Rest"><span class="ic" aria-hidden="true">😴</span><span class="lb">Rest</span></button>
-      <button type="button" class="psy-btn util" data-cmd="LOOK" title="Look" aria-label="Look"><span class="ic" aria-hidden="true">👁️</span><span class="lb">L</span></button>
+      <button type="button" class="psy-btn verb" data-pick="EAT" title="Eat — then pick food" aria-label="Eat"><span class="ic" aria-hidden="true">🍽️</span><span class="lb">Eat</span></button>
+      <button type="button" class="psy-btn verb" data-pick="BREAK" title="Break — then pick what" aria-label="Break"><span class="ic" aria-hidden="true">🔨</span><span class="lb">Break</span></button>
+      <button type="button" class="psy-btn verb" data-pick="TURN" title="Turn — then pick what" aria-label="Turn"><span class="ic" aria-hidden="true">🔄</span><span class="lb">Turn</span></button>
+      <button type="button" class="psy-btn verb" data-pick="PUSH" title="Push — then pick what" aria-label="Push"><span class="ic" aria-hidden="true">🫸</span><span class="lb">Push</span></button>
+      <button type="button" class="psy-btn verb" data-pick="PULL" title="Pull — then pick what" aria-label="Pull"><span class="ic" aria-hidden="true">🪝</span><span class="lb">Pull</span></button>
+      <button type="button" class="psy-btn verb" data-pick="GIVE" title="Give — then pick item" aria-label="Give"><span class="ic" aria-hidden="true">🎁</span><span class="lb">Give</span></button>
+      <button type="button" class="psy-btn verb" data-pick="TAKE" title="Take — then pick what" aria-label="Take"><span class="ic" aria-hidden="true">🤲</span><span class="lb">Take</span></button>
+      <button type="button" class="psy-btn verb" data-pick="WEAR" title="Wear — then pick item" aria-label="Wear"><span class="ic" aria-hidden="true">👕</span><span class="lb">Wear</span></button>
+      <button type="button" class="psy-btn verb" data-pick="REMOVE" title="Remove — then pick item" aria-label="Remove"><span class="ic" aria-hidden="true">🧥</span><span class="lb">Remove</span></button>
+      <button type="button" class="psy-btn verb" data-pick="BUY" title="Buy — then pick what" aria-label="Buy"><span class="ic" aria-hidden="true">🛒</span><span class="lb">Buy</span></button>
     </div>
     <div id="cmd-row">
       <input id="cmd-input" type="text" enterkeyhint="send" autocomplete="off" autocorrect="off"
@@ -512,7 +570,7 @@
     })();
 
     // Cache-bust for IDBFS-refreshed scummvm.ini (see scummvm.js).
-    window.__PSY_CFG_V = 'k7';
+    window.__PSY_CFG_V = 'k8';
 
     // Match kuendig demo: launch args come from the URL hash.
     // Force software gfx (-g 1x) so iOS Safari WebGL hangs cannot leave
@@ -747,8 +805,13 @@
       opts = opts || {};
       var t = (raw || '').replace(/^\s+|\s+$/g, '');
       if (!t) return;
+      // Never send bare object-verbs (SWING, GET, …) — arm pick mode instead.
+      if (window.__psyPick && window.__psyPick.interceptBare(t)) {
+        return;
+      }
       var inp = document.getElementById('cmd-input');
       if (inp) inp.value = '';
+      if (window.__psyPick) window.__psyPick.clear();
       __psyCmdQueue.push({ raw: t, opts: opts });
       psyDrainCmdQueue();
     }
@@ -949,6 +1012,7 @@
       }
 
       function tapOwned(name) {
+        if (window.__psyPick && window.__psyPick.complete(name)) return;
         var w = findWeapon(name);
         if (w) {
           psySubmitCommand(w.useCmd || ((w.verb || 'USE') + ' ' + norm(w.cmd || w.name)));
@@ -960,15 +1024,27 @@
       function renderPills() {
         var el = document.getElementById('owned-icons');
         if (!el) return;
-        var names = Object.keys(state.owned).filter(function (k) { return state.owned[k] && k !== 'FIST'; });
+        var pending = window.__psyPick && window.__psyPick.get && window.__psyPick.get();
+        var showFist = !!(pending && pending.verb === 'SWING');
+        var names = Object.keys(state.owned).filter(function (k) {
+          if (!state.owned[k]) return false;
+          if (k === 'FIST') return showFist;
+          return true;
+        });
+        // If swinging and fist not yet in owned map, still show it
+        if (showFist && names.indexOf('FIST') === -1) names.unshift('FIST');
         el.innerHTML = '';
+        el.classList.toggle('picking', !!pending);
         names.forEach(function (n) {
           var w = findWeapon(n);
           var btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'owned-icon' + (w ? ' weapon' : '');
-          btn.setAttribute('aria-label', n + (w ? ' (use)' : ' (look)'));
-          btn.title = n + (w ? ' — tap to ' + (w.verb || 'USE') : ' — tap to LOOK');
+          var actionHint = pending
+            ? (' — tap for ' + pending.verb)
+            : (w ? ' — tap to ' + (w.verb || 'USE') : ' — tap to LOOK');
+          btn.setAttribute('aria-label', n + actionHint);
+          btn.title = n + actionHint;
           btn.innerHTML = '<span class="ic" aria-hidden="true">' + iconFor(n) + '</span>' +
             '<span class="lb">' + shortLabel(n).replace(/</g, '&lt;') + '</span>';
           btn.addEventListener('click', function (ev) {
@@ -1127,7 +1203,7 @@
 
       function loadCatalog() {
         var base = new URL('.', document.baseURI).pathname.replace(/\/?$/, '/');
-        var url = base + 'data/games/psychotic/objects.json?v=k7';
+        var url = base + 'data/games/psychotic/objects.json?v=k8';
         fetch(url).then(function (r) { return r.json(); }).then(function (j) {
           state.catalog.weapons = j.weapons || [];
           state.catalog.items = j.items || [];
@@ -1155,7 +1231,176 @@
         closeSheet: closeSheet,
         setOwned: setOwned,
         loadCatalog: loadCatalog,
+        renderPills: renderPills,
+        findWeapon: findWeapon,
         state: state
+      };
+    })();
+
+    // ---- Pick-target verbs (never send bare SWING/GET/…) ----
+    window.__psyPick = (function () {
+      var pending = null; // { verb: 'SWING' }
+      var WEAPON_VERBS = { SWING: 1, THROW: 1, FIRE: 1, SHOOT: 1, POINT: 1 };
+      var OWNED_VERBS = { DROP: 1, USE: 1, WEAR: 1, REMOVE: 1, GIVE: 1, EAT: 1, READ: 1 };
+      var ROOM_VERBS = { GET: 1, OPEN: 1, TAKE: 1, BREAK: 1, TURN: 1, PUSH: 1, PULL: 1, BUY: 1, KILL: 1 };
+      var ALL_PICK = {};
+      Object.keys(WEAPON_VERBS).forEach(function (k) { ALL_PICK[k] = 1; });
+      Object.keys(OWNED_VERBS).forEach(function (k) { ALL_PICK[k] = 1; });
+      Object.keys(ROOM_VERBS).forEach(function (k) { ALL_PICK[k] = 1; });
+
+      function norm(s) {
+        return String(s || '').toUpperCase().replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+      }
+
+      function hintEl() { return document.getElementById('pick-hint'); }
+      function inputEl() { return document.getElementById('cmd-input'); }
+
+      function ownedNames(includeFist) {
+        var owned = (window.__psyInv && window.__psyInv.state && window.__psyInv.state.owned) || {};
+        var names = Object.keys(owned).filter(function (k) { return owned[k] && (includeFist || k !== 'FIST'); });
+        if (includeFist && names.indexOf('FIST') === -1) names.unshift('FIST');
+        return names;
+      }
+
+      function weaponsForVerb(verb) {
+        var catalog = (window.__psyInv && window.__psyInv.state && window.__psyInv.state.catalog) || {};
+        var weapons = catalog.weapons || [];
+        var owned = (window.__psyInv && window.__psyInv.state && window.__psyInv.state.owned) || { FIST: true };
+        var out = [];
+        weapons.forEach(function (w) {
+          var n = norm(w.cmd || w.name);
+          var have = !!owned[n] || n === 'FIST';
+          if (!have) return;
+          var v = norm(w.verb || '');
+          if (verb === 'SWING' && (!v || v === 'SWING' || n === 'FIST')) out.push(n);
+          else if (verb === 'THROW' && (!v || v === 'THROW')) out.push(n);
+          else if ((verb === 'FIRE' || verb === 'SHOOT') && (!v || v === 'FIRE' || v === 'SHOOT')) out.push(n);
+          else if (verb === 'POINT' && (!v || v === 'POINT' || v === 'USE')) out.push(n);
+          else if (!WEAPON_VERBS[verb]) out.push(n);
+        });
+        // Also allow any owned item for POINT / generic
+        if (verb === 'POINT' || verb === 'THROW') {
+          ownedNames(false).forEach(function (n) {
+            if (out.indexOf(n) === -1) out.push(n);
+          });
+        }
+        if (verb === 'SWING' && out.indexOf('FIST') === -1) out.unshift('FIST');
+        return out;
+      }
+
+      function setHint(msg) {
+        var el = hintEl();
+        if (!el) return;
+        if (!msg) {
+          el.classList.remove('on');
+          el.innerHTML = '';
+          return;
+        }
+        el.classList.add('on');
+        el.innerHTML = String(msg).replace(/</g, '&lt;') +
+          ' <button type="button" id="pick-cancel">Cancel</button>';
+        var c = document.getElementById('pick-cancel');
+        if (c) c.onclick = function (e) { e.preventDefault(); clear(); };
+      }
+
+      function refreshButtons() {
+        var btns = document.querySelectorAll('.psy-btn[data-pick]');
+        for (var i = 0; i < btns.length; i++) {
+          var v = norm(btns[i].getAttribute('data-pick'));
+          btns[i].classList.toggle('pending', !!(pending && pending.verb === v));
+        }
+        if (window.__psyInv && typeof window.__psyInv.renderPills === 'function') {
+          window.__psyInv.renderPills();
+        }
+      }
+
+      function clear() {
+        pending = null;
+        setHint('');
+        refreshButtons();
+      }
+
+      function arm(verb) {
+        verb = norm(verb);
+        if (!verb || !ALL_PICK[verb]) return false;
+        if (pending && pending.verb === verb) {
+          clear();
+          return true;
+        }
+        pending = { verb: verb };
+        var inp = inputEl();
+        var hint = 'Pick what to ' + verb.toLowerCase();
+        if (WEAPON_VERBS[verb]) {
+          var ready = weaponsForVerb(verb);
+          if (!ready.length) {
+            hint = 'Nothing to ' + verb.toLowerCase() + ' yet — pick a weapon icon or type a name';
+          } else {
+            hint = 'Pick a weapon icon for ' + verb;
+          }
+          if (inp) {
+            inp.value = verb + ' ';
+            try { inp.focus(); } catch (e) {}
+          }
+        } else if (OWNED_VERBS[verb]) {
+          var have = ownedNames(false);
+          if (!have.length) {
+            hint = 'Nothing to ' + verb.toLowerCase() + ' yet — get something first, or type a name';
+          } else {
+            hint = 'Pick an item icon for ' + verb;
+          }
+          if (inp) {
+            inp.value = verb + ' ';
+            try { inp.focus(); } catch (e) {}
+          }
+        } else {
+          // Room / typed targets (GET, OPEN, …)
+          hint = 'Type what to ' + verb.toLowerCase() + ', then Send — or tap an item icon';
+          if (inp) {
+            inp.value = verb + ' ';
+            try {
+              inp.focus();
+              var len = inp.value.length;
+              inp.setSelectionRange(len, len);
+            } catch (e2) {}
+          }
+        }
+        setHint(hint);
+        refreshButtons();
+        return true;
+      }
+
+      function complete(objectName) {
+        if (!pending) return false;
+        var obj = norm(objectName);
+        if (!obj) return false;
+        var cmd = pending.verb + ' ' + obj;
+        clear();
+        var inp = inputEl();
+        if (inp) inp.value = '';
+        psySubmitCommand(cmd);
+        return true;
+      }
+
+      function isBare(raw) {
+        var t = norm(raw);
+        return !!ALL_PICK[t];
+      }
+
+      function interceptBare(raw) {
+        var t = norm(raw);
+        if (!ALL_PICK[t]) return false;
+        arm(t);
+        return true;
+      }
+
+      return {
+        arm: arm,
+        clear: clear,
+        complete: complete,
+        get: function () { return pending; },
+        isBare: isBare,
+        interceptBare: interceptBare,
+        ALL_PICK: ALL_PICK
       };
     })();
 
@@ -1249,12 +1494,16 @@
 
       function bindButtons(root) {
         if (!root) return;
-        var buttons = root.querySelectorAll('.psy-btn[data-cmd], .psy-btn[data-partial]');
+        var buttons = root.querySelectorAll('.psy-btn[data-cmd], .psy-btn[data-partial], .psy-btn[data-pick]');
         for (var i = 0; i < buttons.length; i++) {
           (function (btn) {
             btn.addEventListener('click', function (e) {
               e.preventDefault();
               e.stopPropagation();
+              if (btn.hasAttribute('data-pick')) {
+                window.__psyPick.arm(btn.getAttribute('data-pick'));
+                return;
+              }
               if (btn.hasAttribute('data-cmd')) {
                 psySubmitCommand(btn.getAttribute('data-cmd'));
               } else if (btn.hasAttribute('data-partial')) {
