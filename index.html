@@ -438,6 +438,12 @@
       align-items: center;
       justify-content: center;
     }
+    .owned-icon.seed {
+      border-style: dashed;
+      border-color: #888;
+      background: #2a2a2a;
+      opacity: 0.95;
+    }
 
     .psy-btn.pending {
       background: #c45c16 !important;
@@ -584,7 +590,7 @@
     })();
 
     // Cache-bust for IDBFS-refreshed scummvm.ini (see scummvm.js).
-    window.__PSY_CFG_V = 'k10';
+    window.__PSY_CFG_V = 'k11';
 
     // Match kuendig demo: launch args come from the URL hash.
     // Force software gfx (-g 1x) so iOS Safari WebGL hangs cannot leave
@@ -805,6 +811,10 @@
       var t = (raw || '').replace(/^\s+|\s+$/g, '');
       if (!t) return;
       t = t.toUpperCase();
+      // Fold spelling aliases (SYRINGE → SYRYNGE) before the game sees the line.
+      if (window.__psyInv && typeof window.__psyInv.canonicalCmdLine === 'function') {
+        t = window.__psyInv.canonicalCmdLine(t);
+      }
       console.log('[psy] submit', t, opts);
       // Longer settle when coming from the HTML text field (iOS keyboard dismiss).
       var settle = opts.fromInput ? 280 : 60;
@@ -860,40 +870,108 @@
         if (live && typeof live.value !== 'undefined') {
           var v = live.value;
           if (typeof v === 'bigint') v = Number(v);
-          if (v) return v;
+          if (v) return (v >>> 0);
         }
       } catch (e) {}
       try {
         var snap = (typeof Module !== 'undefined') ? Module['_g_engine'] : 0;
-        if (snap) return snap;
+        if (snap) {
+          if (typeof snap === 'bigint') snap = Number(snap);
+          if (snap) return (snap >>> 0);
+        }
       } catch (e2) {}
+      // Refresh from wasmExports live Global if Module snapshot was stale (0 at boot).
+      try {
+        var we = (typeof Module !== 'undefined') ? (Module['wasmExports'] || Module['asm']) : null;
+        if (we && we['g_engine']) {
+          var g = we['g_engine'];
+          var v2 = (g && typeof g.value !== 'undefined') ? g.value : g;
+          if (typeof v2 === 'bigint') v2 = Number(v2);
+          if (v2) {
+            try { Module['_g_engine'] = v2; } catch (e3) {}
+            return (v2 >>> 0);
+          }
+        }
+      } catch (e4) {}
       return 0;
     }
 
-    function psyOpenMainMenuNative() {
+    function psyCallEngineFn(mangled, eng) {
       try {
-        var eng = psyGetEnginePtr();
-        var fn = (typeof Module !== 'undefined') ? Module['__ZN6Engine18openMainMenuDialogEv'] : null;
-        if (eng && typeof fn === 'function') {
-          console.log('[psy] openMainMenuDialog eng=', eng);
-          fn(eng);
-          return true;
-        }
+        var fn = (typeof Module !== 'undefined') ? Module[mangled] : null;
+        if (!eng || typeof fn !== 'function') return false;
+        fn(eng);
+        return true;
       } catch (e) {
-        console.warn('[psy] openMainMenuDialog failed', e);
+        console.warn('[psy] engine call failed', mangled, e);
+        return false;
       }
+    }
+
+    function psyOpenSaveLoadNative(kind) {
+      var eng = psyGetEnginePtr();
+      if (!eng) {
+        console.log('[psy] no g_engine yet');
+        return false;
+      }
+      console.log('[psy] g_engine=', eng, 'kind=', kind);
+      // Prefer dedicated dialogs over the full GMM.
+      if (kind === 'load') {
+        if (psyCallEngineFn('__ZN6Engine14loadGameDialogEv', eng)) return true;
+      } else {
+        if (psyCallEngineFn('__ZN6Engine14saveGameDialogEv', eng)) return true;
+      }
+      if (psyCallEngineFn('__ZN6Engine18openMainMenuDialogEv', eng)) return true;
       return false;
     }
 
+    // SDL3: bool SDL_SendKeyboardKey(Uint64 ts, SDL_KeyboardID id, int raw, SDL_Scancode sc, bool down)
+    // SDL_SCANCODE_F5=62, LCTRL=224. Fallback 2-arg form also tried.
+    function psySdlSendKey(scancode, down) {
+      try {
+        var fn = (typeof Module !== 'undefined') ? Module['_SDL_SendKeyboardKey'] : null;
+        if (typeof fn !== 'function') return false;
+        try {
+          fn(BigInt(0), 0, 0, scancode | 0, down ? 1 : 0);
+          return true;
+        } catch (e1) {
+          try {
+            fn(0, 0, 0, scancode | 0, down ? 1 : 0);
+            return true;
+          } catch (e2) {
+            try {
+              fn(down ? 1 : 0, scancode | 0);
+              return true;
+            } catch (e3) {
+              return false;
+            }
+          }
+        }
+      } catch (e) {
+        return false;
+      }
+    }
+
     async function psySendCtrlF5() {
-      // Hold Control, press F5, release — SDL reads ctrlKey and/or mod state.
       psyFocusGame();
       await psyDelay(40);
+      // Prefer direct SDL injection (bypasses flaky DOM→SDL stubs).
+      var sdlOk = false;
+      if (psySdlSendKey(224, true)) { // LCTRL down
+        await psyDelay(20);
+        psySdlSendKey(62, true);  // F5 down
+        await psyDelay(40);
+        psySdlSendKey(62, false); // F5 up
+        await psyDelay(20);
+        psySdlSendKey(224, false); // LCTRL up
+        sdlOk = true;
+        console.log('[psy] SDL Ctrl+F5 sent');
+      }
+      // Also fire DOM/JSEvents path as belt-and-suspenders.
       psySendModKey('Control', 'ControlLeft', 17, { ctrl: true });
       await psyDelay(30);
       psySendModKey('F5', 'F5', 116, { ctrl: true });
       await psyDelay(40);
-      // Release Control
       var canvas = document.getElementById('canvas');
       function fireUp(key, codeStr, keyCode) {
         var stub = psyMakeKeyStub('keyup', key, codeStr, keyCode);
@@ -914,37 +992,72 @@
       }
       fireUp('Control', 'ControlLeft', 17);
       await psyDelay(40);
+      return sdlOk;
+    }
+
+    function psyNudgeCanvas() {
+      // Wake a stalled paint after opening a ScummVM GUI dialog.
+      try {
+        var canvas = document.getElementById('canvas');
+        if (!canvas) return;
+        var opts = { bubbles: true, cancelable: true, clientX: 4, clientY: 4, view: window };
+        canvas.dispatchEvent(new MouseEvent('mousemove', opts));
+        canvas.dispatchEvent(new MouseEvent('mousedown', opts));
+        canvas.dispatchEvent(new MouseEvent('mouseup', opts));
+      } catch (e) {}
     }
 
     async function psyOpenScummMenu(kind) {
-      // Prefer native Engine::openMainMenuDialog(g_engine); fall back to Ctrl+F5.
-      kind = kind || 'menu';
+      // Open ScummVM Save / Load / GMM. Defer native calls so we are not nested
+      // inside a DOM click stack (nested GUI loops need the browser event loop).
+      kind = kind || 'save';
       var hint = document.getElementById('status-hint');
       function say(msg) {
         if (!hint) return;
         hint.style.opacity = '1';
         hint.textContent = msg;
-        setTimeout(function () { if (hint) hint.style.opacity = '0.35'; }, 6000);
+        setTimeout(function () { if (hint) hint.style.opacity = '0.35'; }, 7000);
       }
       psyFocusGame();
-      await psyDelay(80);
-      if (psyOpenMainMenuNative()) {
-        say((kind === 'load' ? 'Load' : 'Save') + ' menu open — tap Save or Load');
-        return;
-      }
-      console.log('[psy] native GMM unavailable, trying Ctrl+F5');
-      await psySendCtrlF5();
       await psyDelay(100);
-      // Retry native in case engine pointer appeared
-      if (psyOpenMainMenuNative()) {
-        say((kind === 'load' ? 'Load' : 'Save') + ' menu open — tap Save or Load');
+
+      var opened = await new Promise(function (resolve) {
+        setTimeout(function () {
+          var ok = false;
+          try { ok = psyOpenSaveLoadNative(kind); } catch (e) {
+            console.warn('[psy] deferred native save/load failed', e);
+          }
+          resolve(!!ok);
+        }, 0);
+      });
+      await psyDelay(80);
+      psyNudgeCanvas();
+
+      if (opened) {
+        say((kind === 'load' ? 'Load' : 'Save') + ' dialog open — pick a slot');
+        // Retry once shortly after in case engine pointer appeared mid-boot.
         return;
       }
+
+      console.log('[psy] native save/load unavailable, trying Ctrl+F5 GMM');
+      await psySendCtrlF5();
+      await psyDelay(120);
+      psyNudgeCanvas();
+
+      opened = psyOpenSaveLoadNative(kind);
+      if (opened) {
+        say((kind === 'load' ? 'Load' : 'Save') + ' dialog open — pick a slot');
+        return;
+      }
+
       // Mac-style Meta+F5 and plain F5 as last resorts
       psySendModKey('F5', 'F5', 116, { meta: true });
       await psyDelay(60);
       psySendModKey('F5', 'F5', 116, {});
-      say('If menu did not open, tap the game then Save again');
+      psySdlSendKey(62, true);
+      await psyDelay(40);
+      psySdlSendKey(62, false);
+      say('Save menu may need a running game — tap the Mac screen, then Save again');
     }
 
     function psySubmitCommand(raw, opts) {
@@ -1063,11 +1176,25 @@
       var state = {
         owned: { FIST: true }, // unarmed always available
         catalog: { weapons: [], items: [] },
-        sheetMode: null
+        sheetMode: null,
+        showAllWeapons: false
+      };
+
+      // Game spelling aliases → canonical cmd the engine accepts.
+      var ALIASES = {
+        SYRINGE: 'SYRYNGE',
+        SYRINGES: 'SYRYNGE'
       };
 
       function norm(s) {
         return String(s || '').toUpperCase().replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+      }
+
+      function canonical(name) {
+        var n = norm(name);
+        if (!n) return n;
+        if (ALIASES[n]) return ALIASES[n];
+        return n;
       }
 
       var ICON_MAP = {
@@ -1084,7 +1211,6 @@
         GUN: '🔫',
         UZI: '🔫',
         SYRYNGE: '💉',
-        SYRINGE: '💉',
         DRUGS: '💊',
         'BRASS KEY': '🔑',
         KEY: '🔑',
@@ -1116,9 +1242,8 @@
       };
 
       function iconFor(name) {
-        var n = norm(name);
+        var n = canonical(name);
         if (ICON_MAP[n]) return ICON_MAP[n];
-        // fuzzy key match
         var keys = Object.keys(ICON_MAP);
         for (var i = 0; i < keys.length; i++) {
           var k = keys[i];
@@ -1134,22 +1259,21 @@
       }
 
       function findWeapon(name) {
-        var n = norm(name);
+        var n = canonical(name);
         var weapons = state.catalog.weapons || [];
         for (var i = 0; i < weapons.length; i++) {
-          if (norm(weapons[i].name) === n || norm(weapons[i].cmd) === n) return weapons[i];
+          if (canonical(weapons[i].name) === n || canonical(weapons[i].cmd) === n) return weapons[i];
         }
         var it = matchItem(name);
         if (it && (it.weapon || it.useCmd || it.verb)) {
-          // items flagged weapon — look up matching weapons entry
           for (var j = 0; j < weapons.length; j++) {
-            if (norm(weapons[j].name) === norm(it.name) || norm(weapons[j].cmd) === norm(it.cmd)) {
+            if (canonical(weapons[j].name) === canonical(it.name) || canonical(weapons[j].cmd) === canonical(it.cmd)) {
               return weapons[j];
             }
           }
           if (it.useCmd) return it;
           if (it.weapon) {
-            return { name: it.name, cmd: it.cmd, useCmd: 'USE ' + norm(it.cmd || it.name), verb: 'USE' };
+            return { name: it.name, cmd: it.cmd, useCmd: 'USE ' + canonical(it.cmd || it.name), verb: 'USE' };
           }
         }
         return null;
@@ -1159,10 +1283,41 @@
         if (window.__psyPick && window.__psyPick.complete(name)) return;
         var w = findWeapon(name);
         if (w) {
-          psySubmitCommand(w.useCmd || ((w.verb || 'USE') + ' ' + norm(w.cmd || w.name)));
+          psySubmitCommand(w.useCmd || ((w.verb || 'USE') + ' ' + canonical(w.cmd || w.name)));
         } else {
-          psySubmitCommand('LOOK ' + norm(name));
+          psySubmitCommand('LOOK ' + canonical(name));
         }
+      }
+
+      // Early-game room / target suggestions when GET/KILL/OPEN have no owned chips.
+      var ROOM_SEEDS = {
+        GET: ['SYRYNGE', 'KEY', 'KNIFE', 'CLUB', 'GUN', 'MONEY', 'DRUGS', 'CLOTHES', 'LID'],
+        TAKE: ['SYRYNGE', 'KEY', 'KNIFE', 'CLUB', 'GUN', 'MONEY'],
+        OPEN: ['DOOR', 'WINDOW', 'DRAWER', 'CABINET', 'LOCKER', 'GATE'],
+        BREAK: ['DOOR', 'WINDOW', 'LOCK'],
+        TURN: ['LEVER', 'KNOB', 'DIAL'],
+        PUSH: ['BUTTON', 'LEVER', 'DOOR'],
+        PULL: ['LEVER', 'CORD', 'DOOR'],
+        BUY: ['DRUGS', 'GUN', 'PAPER'],
+        KILL: ['ORDERLY', 'NURSE', 'GUARD', 'MAN', 'WOMAN', 'COP', 'DOCTOR']
+      };
+
+      function seedNamesFor(verb) {
+        verb = norm(verb);
+        var seeds = ROOM_SEEDS[verb] || [];
+        var out = [];
+        seeds.forEach(function (s) {
+          var c = canonical(s);
+          if (out.indexOf(c) === -1) out.push(c);
+        });
+        // Also surface a few catalog gettables for GET/TAKE
+        if (verb === 'GET' || verb === 'TAKE') {
+          (state.catalog.items || []).slice(0, 10).forEach(function (it) {
+            var c = canonical(it.cmd || it.name);
+            if (c && c !== 'FIST' && out.indexOf(c) === -1) out.push(c);
+          });
+        }
+        return out;
       }
 
       function renderPills() {
@@ -1174,16 +1329,30 @@
           if (!state.owned[k]) return false;
           if (k === 'FIST') return showFist;
           return true;
-        });
-        // If swinging and fist not yet in owned map, still show it
+        }).map(canonical);
+        // Dedupe after alias fold
+        names = names.filter(function (n, i, a) { return a.indexOf(n) === i; });
         if (showFist && names.indexOf('FIST') === -1) names.unshift('FIST');
+
+        // When arming a room/target verb with nothing owned, show seed chips (not an empty strip).
+        var usingSeeds = false;
+        if (pending && pending.verb) {
+          var v = norm(pending.verb);
+          var roomish = { GET: 1, OPEN: 1, TAKE: 1, BREAK: 1, TURN: 1, PUSH: 1, PULL: 1, BUY: 1, KILL: 1 };
+          var ownedNonFist = names.filter(function (n) { return n !== 'FIST'; });
+          if (roomish[v] && !ownedNonFist.length) {
+            names = seedNamesFor(v);
+            usingSeeds = true;
+          }
+        }
+
         el.innerHTML = '';
         el.classList.toggle('picking', !!pending);
         names.forEach(function (n) {
           var w = findWeapon(n);
           var btn = document.createElement('button');
           btn.type = 'button';
-          btn.className = 'owned-icon' + (w ? ' weapon' : '');
+          btn.className = 'owned-icon' + (w ? ' weapon' : '') + (usingSeeds ? ' seed' : '');
           var actionHint = pending
             ? (' — tap for ' + pending.verb)
             : (w ? ' — tap to ' + (w.verb || 'USE') : ' — tap to LOOK');
@@ -1192,15 +1361,23 @@
           btn.innerHTML = '<span class="lb">' + shortLabel(n).replace(/</g, '&lt;') + '</span>';
           btn.addEventListener('click', function (ev) {
             ev.preventDefault();
-            tapOwned(n);
+            if (pending) {
+              window.__psyPick.complete(n);
+            } else {
+              tapOwned(n);
+            }
           });
           el.appendChild(btn);
         });
       }
 
       function setOwned(name, have) {
-        var n = norm(name);
+        var n = canonical(name);
         if (!n) return;
+        // Drop alias duplicates (e.g. never keep both SYRINGE and SYRYNGE)
+        Object.keys(ALIASES).forEach(function (a) {
+          if (ALIASES[a] === n && state.owned[a]) delete state.owned[a];
+        });
         if (have) state.owned[n] = true;
         else if (n !== 'FIST') delete state.owned[n];
         renderPills();
@@ -1208,40 +1385,46 @@
       }
 
       function matchItem(token) {
-        var t = norm(token);
+        var t = canonical(token);
         var lists = (state.catalog.weapons || []).concat(state.catalog.items || []);
         for (var i = 0; i < lists.length; i++) {
           var it = lists[i];
-          if (norm(it.name) === t || norm(it.cmd) === t) return it;
+          if (canonical(it.name) === t || canonical(it.cmd) === t) return it;
         }
-        // fuzzy: token contains or is contained
         for (var j = 0; j < lists.length; j++) {
           var it2 = lists[j];
-          var n = norm(it2.name);
+          var n = canonical(it2.name);
           if (n && (t.indexOf(n) !== -1 || n.indexOf(t) !== -1)) return it2;
         }
         return null;
       }
 
       function onCommand(cmd) {
-        var c = norm(cmd);
+        var c = canonicalCmdLine(cmd);
         var m;
         if ((m = /^GET\s+(.+)$/.exec(c))) {
           var it = matchItem(m[1]);
-          setOwned(it ? it.name : m[1], true);
+          setOwned(it ? (it.cmd || it.name) : m[1], true);
         } else if ((m = /^DROP\s+(.+)$/.exec(c))) {
           var it2 = matchItem(m[1]);
-          setOwned(it2 ? it2.name : m[1], false);
+          setOwned(it2 ? (it2.cmd || it2.name) : m[1], false);
         } else if ((m = /^(TAKE|GRAB|PICK UP)\s+(.+)$/.exec(c))) {
           var it3 = matchItem(m[2]);
-          setOwned(it3 ? it3.name : m[2], true);
+          setOwned(it3 ? (it3.cmd || it3.name) : m[2], true);
         }
+      }
+
+      function canonicalCmdLine(cmd) {
+        var parts = norm(cmd).split(' ');
+        for (var i = 0; i < parts.length; i++) {
+          parts[i] = canonical(parts[i]);
+        }
+        return parts.join(' ');
       }
 
       function onPrint(text) {
         var t = String(text || '');
         var low = t.toLowerCase();
-        // Best-effort parse of rare stdout lines (WAGE usually draws to canvas).
         var take = /(?:you (?:take|get|grab|pick up)|lucky you! you found)\s+([a-z0-9 .'\-]+)/i.exec(t);
         if (take) {
           var name = take[1].replace(/[!.]+$/, '').trim();
@@ -1253,7 +1436,7 @@
           if (name2) setOwned(name2, false);
         }
         if (/you have no weapons|do not have any weapons/i.test(low)) {
-          // keep fist only for weapons view indicator — don't wipe inventory
+          // keep fist only — don't wipe inventory
         }
       }
 
@@ -1264,6 +1447,7 @@
           ov.setAttribute('aria-hidden', 'true');
         }
         state.sheetMode = null;
+        state.showAllWeapons = false;
       }
 
       function openSheet(mode) {
@@ -1279,11 +1463,12 @@
 
         if (mode === 'inv') {
           title.textContent = 'Inventory';
-          hint.textContent = 'Tracked items (best-effort). Tap GET in-game or type GET NAME. “INV cmd” sends the game Inventory command. Owned items highlighted.';
-          // Owned first
-          var ownedNames = Object.keys(state.owned).filter(function (k) { return state.owned[k]; });
+          hint.textContent = 'Only items you are carrying (tracked). Close anytime. Use Get + type a name to pick things up.';
+          var ownedNames = Object.keys(state.owned).filter(function (k) {
+            return state.owned[k] && k !== 'FIST';
+          }).map(canonical).filter(function (n, i, a) { return a.indexOf(n) === i; });
           if (!ownedNames.length) {
-            list.innerHTML = '<li><span>Empty — try GET after searching rooms.</span></li>';
+            list.innerHTML = '<li><span>Empty — Search, then Get + type a name (syringe → SYRYNGE).</span></li>';
           }
           ownedNames.forEach(function (n) {
             var li = document.createElement('li');
@@ -1299,40 +1484,45 @@
             li.appendChild(b);
             list.appendChild(li);
           });
-          // Also list known gettables not owned (compact)
-          var extras = (state.catalog.items || []).filter(function (it) {
-            return !state.owned[norm(it.name)];
-          }).slice(0, 24);
-          extras.forEach(function (it) {
-            var li = document.createElement('li');
-            li.innerHTML = '<span>' + String(it.name).replace(/</g, '&lt;') + ' <span class="meta">known</span></span>';
-            var b = document.createElement('button');
-            b.type = 'button';
-            b.textContent = 'GET';
-            b.addEventListener('click', function () {
-              closeSheet();
-              psySubmitCommand('GET ' + norm(it.name));
-            });
-            li.appendChild(b);
-            list.appendChild(li);
-          });
         } else {
           title.textContent = 'Weapons';
-          hint.textContent = 'Tap a weapon you own to use it. Orange = tracked as carried. Fist is always available.';
+          hint.textContent = 'Weapons you own (+ Fist). Close anytime.';
+          var rows = [];
+          // Always fist
+          rows.push({ name: 'fist', cmd: 'FIST', verb: 'SWING', useCmd: 'SWING FIST', have: true });
           (state.catalog.weapons || []).forEach(function (w) {
-            var n = norm(w.name);
-            var have = !!state.owned[n] || n === 'FIST';
+            var n = canonical(w.cmd || w.name);
+            if (n === 'FIST') return;
+            var have = !!state.owned[n];
+            if (!have && !state.showAllWeapons) return;
+            rows.push({ name: w.name, cmd: n, verb: w.verb, useCmd: w.useCmd, have: have });
+          });
+          // Also owned non-catalog weapons
+          Object.keys(state.owned).forEach(function (k) {
+            if (!state.owned[k] || k === 'FIST') return;
+            var c = canonical(k);
+            var already = rows.some(function (r) { return canonical(r.cmd) === c; });
+            if (already) return;
+            var w2 = findWeapon(c);
+            if (w2) rows.push({ name: w2.name || c, cmd: c, verb: w2.verb, useCmd: w2.useCmd, have: true });
+          });
+
+          if (!rows.length) {
+            list.innerHTML = '<li><span>No weapons yet — Fist is always available via Swing.</span></li>';
+          }
+          rows.forEach(function (w) {
+            var n = canonical(w.cmd || w.name);
             var li = document.createElement('li');
-            if (have) li.className = 'owned';
-            var label = String(w.name).replace(/</g, '&lt;');
-            var meta = have ? 'ready' : 'not carrying';
-            li.innerHTML = '<span>' + label + ' <span class="meta">' + meta + ' · ' + (w.verb || 'USE') + '</span></span>';
+            if (w.have) li.className = 'owned';
+            var label = String(w.name || n).replace(/</g, '&lt;');
+            var meta = w.have ? ('ready · ' + (w.verb || 'USE')) : 'not carrying';
+            li.innerHTML = '<span>' + label + ' <span class="meta">' + meta + '</span></span>';
             var b = document.createElement('button');
             b.type = 'button';
-            b.textContent = have ? 'USE' : 'GET';
+            b.textContent = w.have ? 'USE' : 'GET';
             b.addEventListener('click', function () {
               closeSheet();
-              if (have) {
+              if (w.have) {
                 psySubmitCommand(w.useCmd || ('USE ' + n));
               } else {
                 psySubmitCommand('GET ' + n);
@@ -1341,12 +1531,27 @@
             li.appendChild(b);
             list.appendChild(li);
           });
+
+          // Toggle for full catalog (collapsed by default)
+          var tog = document.createElement('li');
+          tog.innerHTML = '<span><span class="meta">' +
+            (state.showAllWeapons ? 'Showing all known weapons' : 'Hide not-carried clutter') +
+            '</span></span>';
+          var tb = document.createElement('button');
+          tb.type = 'button';
+          tb.textContent = state.showAllWeapons ? 'Owned only' : 'All weapons';
+          tb.addEventListener('click', function () {
+            state.showAllWeapons = !state.showAllWeapons;
+            openSheet('weapons');
+          });
+          tog.appendChild(tb);
+          list.appendChild(tog);
         }
       }
 
       function loadCatalog() {
         var base = new URL('.', document.baseURI).pathname.replace(/\/?$/, '/');
-        var url = base + 'data/games/psychotic/objects.json?v=k10';
+        var url = base + 'data/games/psychotic/objects.json?v=k11';
         fetch(url).then(function (r) { return r.json(); }).then(function (j) {
           state.catalog.weapons = j.weapons || [];
           state.catalog.items = j.items || [];
@@ -1354,7 +1559,6 @@
           renderPills();
         }).catch(function (e) {
           console.warn('[psy] objects.json failed', e);
-          // Minimal fallback
           state.catalog.weapons = [
             { name: 'fist', cmd: 'FIST', verb: 'SWING', useCmd: 'SWING FIST' },
             { name: 'knife', cmd: 'KNIFE', verb: 'SWING', useCmd: 'SWING KNIFE' },
@@ -1363,6 +1567,9 @@
             { name: 'grenades', cmd: 'GRENADES', verb: 'THROW', useCmd: 'THROW GRENADES' },
             { name: 'UZI', cmd: 'UZI', verb: 'FIRE', useCmd: 'FIRE UZI' },
             { name: 'luger', cmd: 'LUGER', verb: 'FIRE', useCmd: 'FIRE LUGER' }
+          ];
+          state.catalog.items = [
+            { name: 'Syrynge', cmd: 'SYRYNGE', weapon: false }
           ];
         });
       }
@@ -1376,6 +1583,9 @@
         loadCatalog: loadCatalog,
         renderPills: renderPills,
         findWeapon: findWeapon,
+        canonical: canonical,
+        canonicalCmdLine: canonicalCmdLine,
+        seedNamesFor: seedNamesFor,
         state: state
       };
     })();
@@ -1400,7 +1610,12 @@
 
       function ownedNames(includeFist) {
         var owned = (window.__psyInv && window.__psyInv.state && window.__psyInv.state.owned) || {};
-        var names = Object.keys(owned).filter(function (k) { return owned[k] && (includeFist || k !== 'FIST'); });
+        var can = window.__psyInv && window.__psyInv.canonical
+          ? window.__psyInv.canonical
+          : function (x) { return norm(x); };
+        var names = Object.keys(owned).filter(function (k) {
+          return owned[k] && (includeFist || k !== 'FIST');
+        }).map(can).filter(function (n, i, a) { return a.indexOf(n) === i; });
         if (includeFist && names.indexOf('FIST') === -1) names.unshift('FIST');
         return names;
       }
@@ -1409,9 +1624,12 @@
         var catalog = (window.__psyInv && window.__psyInv.state && window.__psyInv.state.catalog) || {};
         var weapons = catalog.weapons || [];
         var owned = (window.__psyInv && window.__psyInv.state && window.__psyInv.state.owned) || { FIST: true };
+        var can = window.__psyInv && window.__psyInv.canonical
+          ? window.__psyInv.canonical
+          : function (x) { return norm(x); };
         var out = [];
         weapons.forEach(function (w) {
-          var n = norm(w.cmd || w.name);
+          var n = can(w.cmd || w.name);
           var have = !!owned[n] || n === 'FIST';
           if (!have) return;
           var v = norm(w.verb || '');
@@ -1421,7 +1639,6 @@
           else if (verb === 'POINT' && (!v || v === 'POINT' || v === 'USE')) out.push(n);
           else if (!WEAPON_VERBS[verb]) out.push(n);
         });
-        // Also allow any owned item for POINT / generic
         if (verb === 'POINT' || verb === 'THROW') {
           ownedNames(false).forEach(function (n) {
             if (out.indexOf(n) === -1) out.push(n);
@@ -1429,6 +1646,17 @@
         }
         if (verb === 'SWING' && out.indexOf('FIST') === -1) out.unshift('FIST');
         return out;
+      }
+
+      function focusVerbInput(verb) {
+        var inp = inputEl();
+        if (!inp) return;
+        inp.value = verb + ' ';
+        try {
+          inp.focus();
+          var len = inp.value.length;
+          inp.setSelectionRange(len, len);
+        } catch (e) {}
       }
 
       function setHint(msg) {
@@ -1471,41 +1699,29 @@
           return true;
         }
         pending = { verb: verb };
-        var inp = inputEl();
         var hint = 'Pick what to ' + verb.toLowerCase();
         if (WEAPON_VERBS[verb]) {
           var ready = weaponsForVerb(verb);
           if (!ready.length) {
-            hint = 'Nothing to ' + verb.toLowerCase() + ' yet — pick a weapon below or type a name';
+            hint = 'Nothing to ' + verb.toLowerCase() + ' yet — type a weapon name, then Send';
           } else {
-            hint = 'Pick a weapon for ' + verb;
+            hint = 'Tap a weapon for ' + verb + ', or type a name';
           }
-          if (inp) {
-            inp.value = verb + ' ';
-            try { inp.focus(); } catch (e) {}
-          }
+          focusVerbInput(verb);
         } else if (OWNED_VERBS[verb]) {
           var have = ownedNames(false);
           if (!have.length) {
-            hint = 'Nothing to ' + verb.toLowerCase() + ' yet — get something first, or type a name';
+            hint = 'Nothing to ' + verb.toLowerCase() + ' yet — type a name, then Send';
           } else {
-            hint = 'Pick an item for ' + verb;
+            hint = 'Tap an item for ' + verb + ', or type a name';
           }
-          if (inp) {
-            inp.value = verb + ' ';
-            try { inp.focus(); } catch (e) {}
-          }
+          focusVerbInput(verb);
         } else {
-          // Room / typed targets (GET, OPEN, …)
-          hint = 'Type what to ' + verb.toLowerCase() + ', then Send — or tap an item';
-          if (inp) {
-            inp.value = verb + ' ';
-            try {
-              inp.focus();
-              var len = inp.value.length;
-              inp.setSelectionRange(len, len);
-            } catch (e2) {}
-          }
+          // Room / typed targets (GET, OPEN, KILL, …) — always typeable; seed chips if empty.
+          hint = 'Type what to ' + verb.toLowerCase() + ' (e.g. ' + verb +
+            (verb === 'GET' ? ' SYRYNGE' : verb === 'KILL' ? ' ORDERLY' : ' DOOR') +
+            '), then Send — or tap a chip';
+          focusVerbInput(verb);
         }
         setHint(hint);
         refreshButtons();
@@ -1514,7 +1730,10 @@
 
       function complete(objectName) {
         if (!pending) return false;
-        var obj = norm(objectName);
+        var can = window.__psyInv && window.__psyInv.canonical
+          ? window.__psyInv.canonical
+          : norm;
+        var obj = can(objectName);
         if (!obj) return false;
         var cmd = pending.verb + ' ' + obj;
         clear();
@@ -1756,6 +1975,6 @@
       if (hint) hint.textContent = 'Error — see console, or reload.';
     };
   </script>
-  <script async type="text/javascript" src="scummvm.js?v=k10"></script>
+  <script async type="text/javascript" src="scummvm.js?v=k11"></script>
 </body>
 </html>
