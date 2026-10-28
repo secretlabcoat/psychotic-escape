@@ -590,7 +590,7 @@
     })();
 
     // Cache-bust for IDBFS-refreshed scummvm.ini (see scummvm.js).
-    window.__PSY_CFG_V = 'k11';
+    window.__PSY_CFG_V = 'k12';
 
     // Match kuendig demo: launch args come from the URL hash.
     // Force software gfx (-g 1x) so iOS Safari WebGL hangs cannot leave
@@ -1040,6 +1040,7 @@
       }
 
       console.log('[psy] native save/load unavailable, trying Ctrl+F5 GMM');
+      var before = psyCanvasSig();
       await psySendCtrlF5();
       await psyDelay(120);
       psyNudgeCanvas();
@@ -1057,7 +1058,33 @@
       psySdlSendKey(62, true);
       await psyDelay(40);
       psySdlSendKey(62, false);
-      say('Save menu may need a running game — tap the Mac screen, then Save again');
+      // Key fallbacks often DO open the Global Main Menu but can't report it.
+      // Only warn if the screen visibly didn't change (menu did not open).
+      await psyDelay(500);
+      var after = psyCanvasSig();
+      var changed = psySigChanged(before, after);
+      if (changed === true) return; // menu opened — no toast
+      if (changed === false) {
+        say('Save menu may need a running game — tap the Mac screen, then Save again');
+      }
+      // unknown (can't read canvas): stay quiet rather than mislead
+    }
+
+    function psyCanvasSig() {
+      try {
+        var c = document.getElementById('canvas');
+        if (!c || !c.width) return null;
+        var t = document.createElement('canvas'); t.width = 32; t.height = 24;
+        var x = t.getContext('2d'); x.drawImage(c, 0, 0, 32, 24);
+        return x.getImageData(0, 0, 32, 24).data;
+      } catch (e) { return null; }
+    }
+    function psySigChanged(a, b) {
+      if (!a || !b || a.length !== b.length) return null;
+      var sum = 0, any = 0;
+      for (var i = 0; i < a.length; i++) { sum += Math.abs(a[i] - b[i]); any |= a[i] | b[i]; }
+      if (!any) return null; // blank read (e.g. WebGL buffer) — unknown
+      return (sum / a.length) > 4;
     }
 
     function psySubmitCommand(raw, opts) {
@@ -1551,7 +1578,7 @@
 
       function loadCatalog() {
         var base = new URL('.', document.baseURI).pathname.replace(/\/?$/, '/');
-        var url = base + 'data/games/psychotic/objects.json?v=k11';
+        var url = base + 'data/games/psychotic/objects.json?v=k12';
         fetch(url).then(function (r) { return r.json(); }).then(function (j) {
           state.catalog.weapons = j.weapons || [];
           state.catalog.items = j.items || [];
@@ -1975,6 +2002,6 @@
       if (hint) hint.textContent = 'Error — see console, or reload.';
     };
   </script>
-  <script async type="text/javascript" src="scummvm.js?v=k11"></script>
+  <script async type="text/javascript" src="scummvm.js?v=k12"></script>
 </body>
 </html>
