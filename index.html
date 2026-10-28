@@ -126,13 +126,18 @@
     .psy-btn {
       appearance: none;
       -webkit-appearance: none;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
       border: 1px solid #555;
       background: var(--btn);
       color: var(--text);
-      border-radius: 8px;
-      min-height: 36px;
-      min-width: 44px;
-      padding: 6px 10px;
+      border-radius: 10px;
+      min-height: 48px;
+      min-width: 48px;
+      padding: 4px 6px;
       font-size: 13px;
       font-weight: 600;
       letter-spacing: 0.02em;
@@ -140,6 +145,21 @@
       touch-action: manipulation;
       -webkit-user-select: none;
       user-select: none;
+      line-height: 1.05;
+    }
+    .psy-btn .ic {
+      font-size: 20px;
+      line-height: 1;
+    }
+    .psy-btn .lb {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      max-width: 56px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      opacity: 0.9;
     }
     .psy-btn:active, .psy-btn.active {
       background: var(--btn-active);
@@ -147,11 +167,37 @@
     }
     .psy-btn.dir { min-width: 48px; background: #2c3540; }
     .psy-btn.verb { background: #3a3228; }
-    .psy-btn.util { background: #2a2a2a; font-size: 12px; }
+    .psy-btn.combat { background: #3a1e1e; border-color: #844; }
+    .psy-btn.util { background: #2a2a2a; }
     .psy-btn.mute.on {
       background: #6b1d1d;
       border-color: #a33;
     }
+    /* Send / keyboard stay wider text-ish */
+    #cmd-send, #cmd-kb {
+      flex-direction: row;
+      gap: 4px;
+      min-width: 56px;
+      height: 40px;
+      min-height: 40px;
+      padding: 0 10px;
+    }
+    #cmd-send .ic, #cmd-kb .ic { font-size: 16px; }
+    #cmd-send .lb, #cmd-kb .lb { font-size: 12px; max-width: none; }
+    .psy-sheet .sheet-close {
+      flex-direction: row;
+      min-width: 44px;
+      min-height: 36px;
+      padding: 6px 10px;
+    }
+    .psy-sheet .sheet-close .lb { font-size: 12px; }
+    #top-chrome .psy-btn {
+      min-height: 36px;
+      min-width: 44px;
+      padding: 2px 8px;
+    }
+    #top-chrome .psy-btn .ic { font-size: 16px; }
+    #top-chrome .psy-btn .lb { font-size: 9px; }
     #cmd-row {
       display: flex;
       gap: 6px;
@@ -312,21 +358,57 @@
       font-weight: 600;
       min-height: 32px;
     }
-    .owned-pills {
+    .owned-icons {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
-      margin-bottom: 6px;
+      gap: 5px;
+      justify-content: center;
+      margin-bottom: 5px;
       min-height: 0;
     }
-    .owned-pills:empty { display: none; }
-    .owned-pill {
-      font-size: 11px;
-      background: #3a2a1a;
+    .owned-icons:empty { display: none; }
+    .owned-icon {
+      appearance: none;
+      -webkit-appearance: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      min-width: 48px;
+      min-height: 48px;
+      padding: 4px 6px;
       border: 1px solid #c45c16;
-      border-radius: 999px;
-      padding: 2px 8px;
+      border-radius: 10px;
+      background: #3a2a1a;
       color: #f0e6d2;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+      line-height: 1.05;
+    }
+    .owned-icon:active, .owned-icon.active {
+      background: var(--btn-active);
+      border-color: #e07a30;
+    }
+    .owned-icon .ic {
+      font-size: 22px;
+      line-height: 1;
+    }
+    .owned-icon .lb {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      max-width: 56px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      opacity: 0.9;
+    }
+    .owned-icon.weapon {
+      background: #3a2218;
+      border-color: #e07a30;
     }
   </style>
 </head>
@@ -334,8 +416,8 @@
   <div id="top-chrome">
     <span class="title">Psychotic!</span>
     <div class="top-actions">
-      <button type="button" class="psy-btn util mute" id="btn-mute" title="Mute looping ambient/SFX">Mute SFX</button>
-      <button type="button" class="psy-btn util" id="btn-more" title="More commands">More</button>
+      <button type="button" class="psy-btn util mute" id="btn-mute" title="Mute looping ambient/SFX" aria-label="Mute SFX"><span class="ic" aria-hidden="true">🔊</span><span class="lb" id="mute-lb">Mute</span></button>
+      <button type="button" class="psy-btn util" id="btn-more" title="More commands" aria-label="More commands"><span class="ic" aria-hidden="true">⋯</span><span class="lb" id="more-lb">More</span></button>
     </div>
   </div>
   <div id="status-hint">Loading Psychotic…</div>
@@ -356,34 +438,44 @@
   </div>
   <div id="controls">
     <div class="btn-row" id="row-dirs">
-      <button type="button" class="psy-btn dir" data-cmd="NORTH">N</button>
-      <button type="button" class="psy-btn dir" data-cmd="SOUTH">S</button>
-      <button type="button" class="psy-btn dir" data-cmd="EAST">E</button>
-      <button type="button" class="psy-btn dir" data-cmd="WEST">W</button>
-      <button type="button" class="psy-btn dir" data-cmd="UP">U</button>
-      <button type="button" class="psy-btn dir" data-cmd="DOWN">D</button>
+      <button type="button" class="psy-btn dir" data-cmd="NORTH" title="North" aria-label="North"><span class="ic" aria-hidden="true">⬆️</span><span class="lb">N</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="SOUTH" title="South" aria-label="South"><span class="ic" aria-hidden="true">⬇️</span><span class="lb">S</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="EAST" title="East" aria-label="East"><span class="ic" aria-hidden="true">➡️</span><span class="lb">E</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="WEST" title="West" aria-label="West"><span class="ic" aria-hidden="true">⬅️</span><span class="lb">W</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="UP" title="Up" aria-label="Up"><span class="ic" aria-hidden="true">🔼</span><span class="lb">Up</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="DOWN" title="Down" aria-label="Down"><span class="ic" aria-hidden="true">🔽</span><span class="lb">Down</span></button>
     </div>
-    <div class="owned-pills" id="owned-pills" aria-live="polite"></div>
+    <div class="owned-icons" id="owned-icons" aria-live="polite" aria-label="Carried items"></div>
     <div class="btn-row" id="row-verbs">
-      <button type="button" class="psy-btn verb" data-cmd="LOOK">LOOK</button>
-      <button type="button" class="psy-btn verb" data-partial="GET ">GET</button>
-      <button type="button" class="psy-btn verb" data-partial="OPEN ">OPEN</button>
-      <button type="button" class="psy-btn verb" data-cmd="SEARCH">SEARCH</button>
-      <button type="button" class="psy-btn verb" data-cmd="CLOSE">CLOSE</button>
-      <button type="button" class="psy-btn util" id="btn-inv" title="Inventory">INV</button>
-      <button type="button" class="psy-btn util" id="btn-weapons" title="Weapons">Weapons</button>
+      <button type="button" class="psy-btn verb" data-cmd="LOOK" title="Look" aria-label="Look"><span class="ic" aria-hidden="true">👁️</span><span class="lb">Look</span></button>
+      <button type="button" class="psy-btn verb" data-partial="GET " title="Get" aria-label="Get"><span class="ic" aria-hidden="true">✊</span><span class="lb">Get</span></button>
+      <button type="button" class="psy-btn verb" data-partial="OPEN " title="Open" aria-label="Open"><span class="ic" aria-hidden="true">🚪</span><span class="lb">Open</span></button>
+      <button type="button" class="psy-btn verb" data-cmd="SEARCH" title="Search" aria-label="Search"><span class="ic" aria-hidden="true">🔍</span><span class="lb">Search</span></button>
+      <button type="button" class="psy-btn verb" data-cmd="CLOSE" title="Close" aria-label="Close"><span class="ic" aria-hidden="true">🔒</span><span class="lb">Close</span></button>
+      <button type="button" class="psy-btn util" id="btn-inv" title="Inventory" aria-label="Inventory"><span class="ic" aria-hidden="true">🎒</span><span class="lb">Inv</span></button>
+      <button type="button" class="psy-btn util" id="btn-weapons" title="Weapons" aria-label="Weapons"><span class="ic" aria-hidden="true">⚔️</span><span class="lb">Arms</span></button>
+    </div>
+    <div class="btn-row" id="row-combat" aria-label="Combat">
+      <button type="button" class="psy-btn combat" data-cmd="AIM HEAD" title="Aim head" aria-label="Aim head"><span class="ic" aria-hidden="true">🎯</span><span class="lb">Head</span></button>
+      <button type="button" class="psy-btn combat" data-cmd="AIM BODY" title="Aim body" aria-label="Aim body"><span class="ic" aria-hidden="true">🎯</span><span class="lb">Body</span></button>
+      <button type="button" class="psy-btn combat" data-cmd="AIM SIDE" title="Aim side" aria-label="Aim side"><span class="ic" aria-hidden="true">🎯</span><span class="lb">Side</span></button>
+      <button type="button" class="psy-btn combat" data-cmd="SWING" title="Swing" aria-label="Swing"><span class="ic" aria-hidden="true">🗡️</span><span class="lb">Swing</span></button>
+      <button type="button" class="psy-btn combat" data-cmd="THROW" title="Throw" aria-label="Throw"><span class="ic" aria-hidden="true">💣</span><span class="lb">Throw</span></button>
+      <button type="button" class="psy-btn combat" data-cmd="FIRE" title="Fire" aria-label="Fire"><span class="ic" aria-hidden="true">🔫</span><span class="lb">Fire</span></button>
+      <button type="button" class="psy-btn combat" data-cmd="SHOOT" title="Shoot" aria-label="Shoot"><span class="ic" aria-hidden="true">💥</span><span class="lb">Shoot</span></button>
+      <button type="button" class="psy-btn combat" data-cmd="POINT" title="Point" aria-label="Point"><span class="ic" aria-hidden="true">👉</span><span class="lb">Point</span></button>
     </div>
     <div class="btn-row" id="row-more" hidden>
-      <button type="button" class="psy-btn util" data-cmd="INVENTORY">INV cmd</button>
-      <button type="button" class="psy-btn util" data-cmd="STATUS">STATUS</button>
-      <button type="button" class="psy-btn util" data-cmd="REST">REST</button>
-      <button type="button" class="psy-btn util" data-cmd="LOOK">L</button>
+      <button type="button" class="psy-btn util" data-cmd="INVENTORY" title="Inventory command" aria-label="Inventory command"><span class="ic" aria-hidden="true">📋</span><span class="lb">Inv cmd</span></button>
+      <button type="button" class="psy-btn util" data-cmd="STATUS" title="Status" aria-label="Status"><span class="ic" aria-hidden="true">❤️</span><span class="lb">Status</span></button>
+      <button type="button" class="psy-btn util" data-cmd="REST" title="Rest" aria-label="Rest"><span class="ic" aria-hidden="true">😴</span><span class="lb">Rest</span></button>
+      <button type="button" class="psy-btn util" data-cmd="LOOK" title="Look" aria-label="Look"><span class="ic" aria-hidden="true">👁️</span><span class="lb">L</span></button>
     </div>
     <div id="cmd-row">
       <input id="cmd-input" type="text" enterkeyhint="send" autocomplete="off" autocorrect="off"
              autocapitalize="characters" spellcheck="false" placeholder="Type LOOK, GET door…" />
-      <button type="button" class="psy-btn" id="cmd-send">Send</button>
-      <button type="button" class="psy-btn util" id="cmd-kb" title="Show phone keyboard">⌨</button>
+      <button type="button" class="psy-btn" id="cmd-send" title="Send command" aria-label="Send"><span class="ic" aria-hidden="true">📤</span><span class="lb">Send</span></button>
+      <button type="button" class="psy-btn util" id="cmd-kb" title="Show phone keyboard" aria-label="Keyboard"><span class="ic" aria-hidden="true">⌨</span><span class="lb">Key</span></button>
     </div>
   </div>
 
@@ -391,7 +483,7 @@
   <div id="sheet-overlay" aria-hidden="true">
     <div class="psy-sheet" id="sheet-panel" role="dialog">
       <h2><span id="sheet-title">Inventory</span>
-        <button type="button" class="psy-btn util sheet-close" id="sheet-close">Close</button>
+        <button type="button" class="psy-btn util sheet-close" id="sheet-close" aria-label="Close sheet"><span class="lb">Close</span></button>
       </h2>
       <p class="hint" id="sheet-hint"></p>
       <ul id="sheet-list"></ul>
@@ -420,7 +512,7 @@
     })();
 
     // Cache-bust for IDBFS-refreshed scummvm.ini (see scummvm.js).
-    window.__PSY_CFG_V = 'k6';
+    window.__PSY_CFG_V = 'k7';
 
     // Match kuendig demo: launch args come from the URL hash.
     // Force software gfx (-g 1x) so iOS Safari WebGL hangs cannot leave
@@ -724,7 +816,12 @@
       var btn = document.getElementById('btn-mute');
       if (btn) {
         btn.classList.toggle('on', window.__psySfxMuted);
-        btn.textContent = window.__psySfxMuted ? 'Unmute SFX' : 'Mute SFX';
+        var ic = btn.querySelector('.ic');
+        var lb = btn.querySelector('.lb') || document.getElementById('mute-lb');
+        if (ic) ic.textContent = window.__psySfxMuted ? '🔇' : '🔊';
+        if (lb) lb.textContent = window.__psySfxMuted ? 'Unmute' : 'Mute';
+        btn.setAttribute('aria-label', window.__psySfxMuted ? 'Unmute SFX' : 'Mute SFX');
+        btn.title = window.__psySfxMuted ? 'Unmute SFX' : 'Mute looping ambient/SFX';
       }
       var gain = psyEnsureGain();
       if (gain) {
@@ -766,13 +863,120 @@
         return String(s || '').toUpperCase().replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
       }
 
+      var ICON_MAP = {
+        FIST: '👊',
+        SHOVEL: '⛏️',
+        CROWBAR: '🔧',
+        HATCHET: '🪓',
+        'M-16': '🔫',
+        GRENADES: '💣',
+        LUGER: '🔫',
+        '.38 SPECIAL': '🔫',
+        CLUB: '🏏',
+        KNIFE: '🔪',
+        GUN: '🔫',
+        UZI: '🔫',
+        SYRYNGE: '💉',
+        SYRINGE: '💉',
+        DRUGS: '💊',
+        'BRASS KEY': '🔑',
+        KEY: '🔑',
+        MONEY: '💵',
+        LID: '🫙',
+        CLOTHES: '👕',
+        HOSTAGE: '👤',
+        BUTTON: '🔘',
+        LEVER: '🎚️',
+        STICK: '🪵',
+        HYDRANT: '🚒',
+        'HYDRANT WATER': '💧',
+        'GOOD TIME': '🎉',
+        DIAMONDS: '💎',
+        'TRICKY DICK': '🃏',
+        'PAPER VENDOR': '📰',
+        GINGER: '👩',
+        'CHINESE PAPER': '📄',
+        'COAT RACK': '🧥',
+        'KITCHEN DRAWERS': '🗄️',
+        'VERY MOIST STEWARDESS': '👩‍✈️',
+        BLOWJOB: '💋',
+        MIRROR: '🪞',
+        CABIN: '🏠',
+        AMULET: '🔮',
+        'BULLET-PROOF VEST': '🛡️',
+        VEST: '🛡️',
+        PAPER: '📄'
+      };
+
+      function iconFor(name) {
+        var n = norm(name);
+        if (ICON_MAP[n]) return ICON_MAP[n];
+        // fuzzy key match
+        var keys = Object.keys(ICON_MAP);
+        for (var i = 0; i < keys.length; i++) {
+          var k = keys[i];
+          if (n.indexOf(k) !== -1 || k.indexOf(n) !== -1) return ICON_MAP[k];
+        }
+        return '🎒';
+      }
+
+      function shortLabel(name) {
+        var n = String(name || '');
+        if (n.length <= 8) return n;
+        return n.slice(0, 7) + '…';
+      }
+
+      function findWeapon(name) {
+        var n = norm(name);
+        var weapons = state.catalog.weapons || [];
+        for (var i = 0; i < weapons.length; i++) {
+          if (norm(weapons[i].name) === n || norm(weapons[i].cmd) === n) return weapons[i];
+        }
+        var it = matchItem(name);
+        if (it && (it.weapon || it.useCmd || it.verb)) {
+          // items flagged weapon — look up matching weapons entry
+          for (var j = 0; j < weapons.length; j++) {
+            if (norm(weapons[j].name) === norm(it.name) || norm(weapons[j].cmd) === norm(it.cmd)) {
+              return weapons[j];
+            }
+          }
+          if (it.useCmd) return it;
+          if (it.weapon) {
+            return { name: it.name, cmd: it.cmd, useCmd: 'USE ' + norm(it.cmd || it.name), verb: 'USE' };
+          }
+        }
+        return null;
+      }
+
+      function tapOwned(name) {
+        var w = findWeapon(name);
+        if (w) {
+          psySubmitCommand(w.useCmd || ((w.verb || 'USE') + ' ' + norm(w.cmd || w.name)));
+        } else {
+          psySubmitCommand('LOOK ' + norm(name));
+        }
+      }
+
       function renderPills() {
-        var el = document.getElementById('owned-pills');
+        var el = document.getElementById('owned-icons');
         if (!el) return;
         var names = Object.keys(state.owned).filter(function (k) { return state.owned[k] && k !== 'FIST'; });
-        el.innerHTML = names.map(function (n) {
-          return '<span class="owned-pill">' + n.replace(/</g, '&lt;') + '</span>';
-        }).join('');
+        el.innerHTML = '';
+        names.forEach(function (n) {
+          var w = findWeapon(n);
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'owned-icon' + (w ? ' weapon' : '');
+          btn.setAttribute('aria-label', n + (w ? ' (use)' : ' (look)'));
+          btn.title = n + (w ? ' — tap to ' + (w.verb || 'USE') : ' — tap to LOOK');
+          btn.innerHTML = '<span class="ic" aria-hidden="true">' + iconFor(n) + '</span>' +
+            '<span class="lb">' + shortLabel(n).replace(/</g, '&lt;') + '</span>';
+          btn.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            tapOwned(n);
+          });
+          el.appendChild(btn);
+        });
       }
 
       function setOwned(name, have) {
@@ -923,7 +1127,7 @@
 
       function loadCatalog() {
         var base = new URL('.', document.baseURI).pathname.replace(/\/?$/, '/');
-        var url = base + 'data/games/psychotic/objects.json?v=k6';
+        var url = base + 'data/games/psychotic/objects.json?v=k7';
         fetch(url).then(function (r) { return r.json(); }).then(function (j) {
           state.catalog.weapons = j.weapons || [];
           state.catalog.items = j.items || [];
@@ -1003,7 +1207,11 @@
         e.preventDefault();
         var hide = !moreRow.hidden;
         moreRow.hidden = hide;
-        moreBtn.textContent = hide ? 'More' : 'Less';
+        var lb = moreBtn.querySelector('.lb') || document.getElementById('more-lb');
+        var ic = moreBtn.querySelector('.ic');
+        if (lb) lb.textContent = hide ? 'More' : 'Less';
+        if (ic) ic.textContent = hide ? '⋯' : '▴';
+        moreBtn.setAttribute('aria-label', hide ? 'More commands' : 'Less commands');
       });
 
       muteBtn.addEventListener('click', function (e) {
