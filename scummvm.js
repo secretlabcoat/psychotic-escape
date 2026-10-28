@@ -100632,7 +100632,7 @@ function assignWasmExports(wasmExports) {
   __ZTV14MainMenuDialog = Module['__ZTV14MainMenuDialog'] = wasmExports['_ZTV14MainMenuDialog'].value;
   __ZN3GUI11ThemeEngine15kImageLogoSmallE = Module['__ZN3GUI11ThemeEngine15kImageLogoSmallE'] = wasmExports['_ZN3GUI11ThemeEngine15kImageLogoSmallE'].value;
   __ZTVN3GUI12ConfigDialogE = Module['__ZTVN3GUI12ConfigDialogE'] = wasmExports['_ZTVN3GUI12ConfigDialogE'].value;
-  _g_engine = Module['_g_engine'] = wasmExports['g_engine'].value;
+  _g_engine = Module['_g_engine'] = wasmExports['g_engine'].value; Module['_g_engine_live'] = wasmExports['g_engine'];
   __ZTVN3GUI21ExtraGuiOptionsWidgetE = Module['__ZTVN3GUI21ExtraGuiOptionsWidgetE'] = wasmExports['_ZTVN3GUI21ExtraGuiOptionsWidgetE'].value;
   __ZTI14MainMenuDialog = Module['__ZTI14MainMenuDialog'] = wasmExports['_ZTI14MainMenuDialog'].value;
   __ZTIN3GUI12ConfigDialogE = Module['__ZTIN3GUI12ConfigDialogE'] = wasmExports['_ZTIN3GUI12ConfigDialogE'].value;

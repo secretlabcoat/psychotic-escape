@@ -116,7 +116,7 @@
       touch-action: manipulation;
       -webkit-user-select: text;
       user-select: text;
-      max-height: 42vh;
+      max-height: 38vh;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
     }
@@ -139,28 +139,32 @@
       border: 1px solid #555;
       background: var(--btn);
       color: var(--text);
-      border-radius: 7px;
-      width: 36px;
-      height: 36px;
-      min-height: 36px;
-      min-width: 36px;
-      padding: 0;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0;
+      border-radius: 6px;
+      width: auto;
+      height: 30px;
+      min-height: 30px;
+      min-width: 28px;
+      padding: 0 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
       cursor: pointer;
       touch-action: manipulation;
       -webkit-user-select: none;
       user-select: none;
       line-height: 1;
       flex: 0 0 auto;
+      white-space: nowrap;
     }
     .psy-btn .ic {
-      font-size: 17px;
-      line-height: 1;
+      display: none !important;
     }
     .psy-btn .lb {
-      display: none !important;
+      display: inline !important;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0.02em;
     }
     .psy-btn:active, .psy-btn.active {
       background: var(--btn-active);
@@ -175,17 +179,18 @@
       background: #6b1d1d;
       border-color: #a33;
     }
-    /* Send / keyboard — icon-only, slightly wider tap */
+    /* Send / keyboard — short text */
     #cmd-send, #cmd-kb {
       flex-direction: row;
       gap: 0;
-      width: 40px;
+      width: auto;
       min-width: 40px;
-      height: 36px;
-      min-height: 36px;
-      padding: 0;
+      height: 34px;
+      min-height: 34px;
+      padding: 0 10px;
     }
-    #cmd-send .ic, #cmd-kb .ic { font-size: 16px; }
+    #cmd-send .ic, #cmd-kb .ic { display: none !important; }
+    #cmd-send .lb, #cmd-kb .lb { display: inline !important; font-size: 12px; }
     .psy-sheet .sheet-close {
       flex-direction: row;
       width: auto;
@@ -196,13 +201,14 @@
     }
     .psy-sheet .sheet-close .lb { display: inline !important; font-size: 12px; }
     #top-chrome .psy-btn {
-      width: 36px;
-      height: 32px;
-      min-height: 32px;
+      width: auto;
+      height: 28px;
+      min-height: 28px;
       min-width: 36px;
-      padding: 0;
+      padding: 0 8px;
     }
-    #top-chrome .psy-btn .ic { font-size: 15px; }
+    #top-chrome .psy-btn .ic { display: none !important; }
+    #top-chrome .psy-btn .lb { display: inline !important; font-size: 11px; }
     #cmd-row {
       display: flex;
       gap: 4px;
@@ -212,7 +218,7 @@
     #cmd-input {
       flex: 1 1 auto;
       min-width: 0;
-      height: 36px;
+      height: 34px;
       border-radius: 8px;
       border: 1px solid #666;
       background: #111;
@@ -285,7 +291,8 @@
     }
     @media (min-width: 700px) {
       #controls { padding-left: 8%; padding-right: 8%; }
-      .psy-btn, .owned-icon { width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
+      .psy-btn { min-height: 32px; height: 32px; padding: 0 8px; font-size: 12px; }
+      .owned-icon { min-height: 32px; height: 32px; padding: 0 8px; }
     }
 
     #sheet-overlay {
@@ -381,13 +388,13 @@
       align-items: center;
       justify-content: center;
       gap: 0;
-      width: 36px;
-      height: 36px;
-      min-width: 36px;
-      min-height: 36px;
-      padding: 0;
+      width: auto;
+      height: 30px;
+      min-width: 28px;
+      min-height: 30px;
+      padding: 0 6px;
       border: 1px solid #c45c16;
-      border-radius: 7px;
+      border-radius: 6px;
       background: #3a2a1a;
       color: #f0e6d2;
       cursor: pointer;
@@ -396,17 +403,23 @@
       user-select: none;
       line-height: 1;
       flex: 0 0 auto;
+      white-space: nowrap;
+      font-size: 11px;
+      font-weight: 700;
     }
     .owned-icon:active, .owned-icon.active {
       background: var(--btn-active);
       border-color: #e07a30;
     }
     .owned-icon .ic {
-      font-size: 17px;
-      line-height: 1;
+      display: none !important;
     }
     .owned-icon .lb {
-      display: none !important;
+      display: inline !important;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      text-transform: uppercase;
     }
     .owned-icon.weapon {
       background: #3a2218;
@@ -421,7 +434,7 @@
     }
     .owned-icons.picking:empty {
       display: flex;
-      min-height: 36px;
+      min-height: 30px;
       align-items: center;
       justify-content: center;
     }
@@ -461,8 +474,8 @@
   <div id="top-chrome">
     <span class="title">Psychotic!</span>
     <div class="top-actions">
-      <button type="button" class="psy-btn util mute" id="btn-mute" title="Mute looping ambient/SFX" aria-label="Mute SFX"><span class="ic" aria-hidden="true">🔊</span></button>
-      <button type="button" class="psy-btn util" id="btn-more" title="More commands" aria-label="More commands"><span class="ic" aria-hidden="true">⋯</span></button>
+      <button type="button" class="psy-btn util mute" id="btn-mute" title="Mute looping ambient/SFX" aria-label="Mute SFX"><span class="lb">Mute</span></button>
+      <button type="button" class="psy-btn util" id="btn-more" title="More commands" aria-label="More commands"><span class="lb">More</span></button>
     </div>
   </div>
   <div id="status-hint">Loading Psychotic…</div>
@@ -484,57 +497,57 @@
   <div id="controls">
     <p id="pick-hint" aria-live="polite"></p>
     <div class="btn-row" id="row-cmds">
-      <button type="button" class="psy-btn dir" data-cmd="NORTH" title="North" aria-label="North"><span class="ic" aria-hidden="true">⬆️</span></button>
-      <button type="button" class="psy-btn dir" data-cmd="SOUTH" title="South" aria-label="South"><span class="ic" aria-hidden="true">⬇️</span></button>
-      <button type="button" class="psy-btn dir" data-cmd="EAST" title="East" aria-label="East"><span class="ic" aria-hidden="true">➡️</span></button>
-      <button type="button" class="psy-btn dir" data-cmd="WEST" title="West" aria-label="West"><span class="ic" aria-hidden="true">⬅️</span></button>
-      <button type="button" class="psy-btn dir" data-cmd="UP" title="Up" aria-label="Up"><span class="ic" aria-hidden="true">🔼</span></button>
-      <button type="button" class="psy-btn dir" data-cmd="DOWN" title="Down" aria-label="Down"><span class="ic" aria-hidden="true">🔽</span></button>
-      <button type="button" class="psy-btn dir" data-cmd="ENTER" title="Enter" aria-label="Enter"><span class="ic" aria-hidden="true">🚪</span></button>
-      <button type="button" class="psy-btn dir" data-cmd="EXIT" title="Exit" aria-label="Exit"><span class="ic" aria-hidden="true">🚶</span></button>
-      <button type="button" class="psy-btn verb" data-cmd="LOOK" title="Look" aria-label="Look"><span class="ic" aria-hidden="true">👁️</span></button>
-      <button type="button" class="psy-btn verb" data-pick="GET" title="Get — then pick what" aria-label="Get"><span class="ic" aria-hidden="true">✊</span></button>
-      <button type="button" class="psy-btn verb" data-pick="OPEN" title="Open — then pick what" aria-label="Open"><span class="ic" aria-hidden="true">🔓</span></button>
-      <button type="button" class="psy-btn verb" data-cmd="SEARCH" title="Search" aria-label="Search"><span class="ic" aria-hidden="true">🔍</span></button>
-      <button type="button" class="psy-btn verb" data-cmd="CLOSE" title="Close" aria-label="Close"><span class="ic" aria-hidden="true">🔒</span></button>
-      <button type="button" class="psy-btn verb" data-pick="DROP" title="Drop — then pick item" aria-label="Drop"><span class="ic" aria-hidden="true">📥</span></button>
-      <button type="button" class="psy-btn verb" data-pick="USE" title="Use — then pick item" aria-label="Use"><span class="ic" aria-hidden="true">🛠️</span></button>
-      <button type="button" class="psy-btn verb" data-pick="READ" title="Read — then pick what" aria-label="Read"><span class="ic" aria-hidden="true">📖</span></button>
-      <button type="button" class="psy-btn util" id="btn-inv" title="Inventory" aria-label="Inventory"><span class="ic" aria-hidden="true">🎒</span></button>
-      <button type="button" class="psy-btn util" id="btn-weapons" title="Weapons" aria-label="Weapons"><span class="ic" aria-hidden="true">⚔️</span></button>
-      <button type="button" class="psy-btn save" id="btn-save" title="Save game" aria-label="Save"><span class="ic" aria-hidden="true">💾</span></button>
-      <button type="button" class="psy-btn save" id="btn-load" title="Load game" aria-label="Load"><span class="ic" aria-hidden="true">📂</span></button>
-      <button type="button" class="psy-btn combat" data-cmd="AIM HEAD" title="Aim head" aria-label="Aim head"><span class="ic" aria-hidden="true">🗣️</span></button>
-      <button type="button" class="psy-btn combat" data-cmd="AIM CHEST" title="Aim chest" aria-label="Aim chest"><span class="ic" aria-hidden="true">🫀</span></button>
-      <button type="button" class="psy-btn combat" data-cmd="AIM SIDE" title="Aim side" aria-label="Aim side"><span class="ic" aria-hidden="true">↔️</span></button>
-      <button type="button" class="psy-btn combat" data-pick="SWING" title="Swing — then pick weapon" aria-label="Swing"><span class="ic" aria-hidden="true">🗡️</span></button>
-      <button type="button" class="psy-btn combat" data-pick="THROW" title="Throw — then pick weapon" aria-label="Throw"><span class="ic" aria-hidden="true">💣</span></button>
-      <button type="button" class="psy-btn combat" data-pick="FIRE" title="Fire — then pick gun" aria-label="Fire"><span class="ic" aria-hidden="true">🔫</span></button>
-      <button type="button" class="psy-btn combat" data-pick="SHOOT" title="Shoot — then pick gun" aria-label="Shoot"><span class="ic" aria-hidden="true">💥</span></button>
-      <button type="button" class="psy-btn combat" data-pick="POINT" title="Point — then pick item" aria-label="Point"><span class="ic" aria-hidden="true">👉</span></button>
-      <button type="button" class="psy-btn combat" data-pick="KILL" title="Kill — then pick target" aria-label="Kill"><span class="ic" aria-hidden="true">☠️</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="NORTH" title="North" aria-label="North"><span class="lb">N</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="SOUTH" title="South" aria-label="South"><span class="lb">S</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="EAST" title="East" aria-label="East"><span class="lb">E</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="WEST" title="West" aria-label="West"><span class="lb">W</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="UP" title="Up" aria-label="Up"><span class="lb">Up</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="DOWN" title="Down" aria-label="Down"><span class="lb">Down</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="ENTER" title="Enter" aria-label="Enter"><span class="lb">Enter</span></button>
+      <button type="button" class="psy-btn dir" data-cmd="EXIT" title="Exit" aria-label="Exit"><span class="lb">Exit</span></button>
+      <button type="button" class="psy-btn verb" data-cmd="LOOK" title="Look" aria-label="Look"><span class="lb">Look</span></button>
+      <button type="button" class="psy-btn verb" data-pick="GET" title="Get — then pick what" aria-label="Get"><span class="lb">Get</span></button>
+      <button type="button" class="psy-btn verb" data-pick="OPEN" title="Open — then pick what" aria-label="Open"><span class="lb">Open</span></button>
+      <button type="button" class="psy-btn verb" data-cmd="SEARCH" title="Search" aria-label="Search"><span class="lb">Search</span></button>
+      <button type="button" class="psy-btn verb" data-cmd="CLOSE" title="Close" aria-label="Close"><span class="lb">Close</span></button>
+      <button type="button" class="psy-btn verb" data-pick="DROP" title="Drop — then pick item" aria-label="Drop"><span class="lb">Drop</span></button>
+      <button type="button" class="psy-btn verb" data-pick="USE" title="Use — then pick item" aria-label="Use"><span class="lb">Use</span></button>
+      <button type="button" class="psy-btn verb" data-pick="READ" title="Read — then pick what" aria-label="Read"><span class="lb">Read</span></button>
+      <button type="button" class="psy-btn util" id="btn-inv" title="Inventory" aria-label="Inventory"><span class="lb">Inv</span></button>
+      <button type="button" class="psy-btn util" id="btn-weapons" title="Weapons" aria-label="Weapons"><span class="lb">Arms</span></button>
+      <button type="button" class="psy-btn save" id="btn-save" title="Save game" aria-label="Save"><span class="lb">Save</span></button>
+      <button type="button" class="psy-btn save" id="btn-load" title="Load game" aria-label="Load"><span class="lb">Load</span></button>
+      <button type="button" class="psy-btn combat" data-cmd="AIM HEAD" title="Aim head" aria-label="Aim head"><span class="lb">Head</span></button>
+      <button type="button" class="psy-btn combat" data-cmd="AIM CHEST" title="Aim chest" aria-label="Aim chest"><span class="lb">Chest</span></button>
+      <button type="button" class="psy-btn combat" data-cmd="AIM SIDE" title="Aim side" aria-label="Aim side"><span class="lb">Side</span></button>
+      <button type="button" class="psy-btn combat" data-pick="SWING" title="Swing — then pick weapon" aria-label="Swing"><span class="lb">Swing</span></button>
+      <button type="button" class="psy-btn combat" data-pick="THROW" title="Throw — then pick weapon" aria-label="Throw"><span class="lb">Throw</span></button>
+      <button type="button" class="psy-btn combat" data-pick="FIRE" title="Fire — then pick gun" aria-label="Fire"><span class="lb">Fire</span></button>
+      <button type="button" class="psy-btn combat" data-pick="SHOOT" title="Shoot — then pick gun" aria-label="Shoot"><span class="lb">Shoot</span></button>
+      <button type="button" class="psy-btn combat" data-pick="POINT" title="Point — then pick item" aria-label="Point"><span class="lb">Point</span></button>
+      <button type="button" class="psy-btn combat" data-pick="KILL" title="Kill — then pick target" aria-label="Kill"><span class="lb">Kill</span></button>
     </div>
     <div class="owned-icons" id="owned-icons" aria-live="polite" aria-label="Carried items"></div>
     <div class="btn-row" id="row-more" hidden>
-      <button type="button" class="psy-btn util" data-cmd="INVENTORY" title="Inventory command" aria-label="Inventory command"><span class="ic" aria-hidden="true">📋</span></button>
-      <button type="button" class="psy-btn util" data-cmd="STATUS" title="Status" aria-label="Status"><span class="ic" aria-hidden="true">❤️</span></button>
-      <button type="button" class="psy-btn util" data-cmd="REST" title="Rest" aria-label="Rest"><span class="ic" aria-hidden="true">😴</span></button>
-      <button type="button" class="psy-btn verb" data-pick="EAT" title="Eat — then pick food" aria-label="Eat"><span class="ic" aria-hidden="true">🍽️</span></button>
-      <button type="button" class="psy-btn verb" data-pick="BREAK" title="Break — then pick what" aria-label="Break"><span class="ic" aria-hidden="true">🔨</span></button>
-      <button type="button" class="psy-btn verb" data-pick="TURN" title="Turn — then pick what" aria-label="Turn"><span class="ic" aria-hidden="true">🔄</span></button>
-      <button type="button" class="psy-btn verb" data-pick="PUSH" title="Push — then pick what" aria-label="Push"><span class="ic" aria-hidden="true">🫸</span></button>
-      <button type="button" class="psy-btn verb" data-pick="PULL" title="Pull — then pick what" aria-label="Pull"><span class="ic" aria-hidden="true">🪝</span></button>
-      <button type="button" class="psy-btn verb" data-pick="GIVE" title="Give — then pick item" aria-label="Give"><span class="ic" aria-hidden="true">🎁</span></button>
-      <button type="button" class="psy-btn verb" data-pick="TAKE" title="Take — then pick what" aria-label="Take"><span class="ic" aria-hidden="true">🤲</span></button>
-      <button type="button" class="psy-btn verb" data-pick="WEAR" title="Wear — then pick item" aria-label="Wear"><span class="ic" aria-hidden="true">👕</span></button>
-      <button type="button" class="psy-btn verb" data-pick="REMOVE" title="Remove — then pick item" aria-label="Remove"><span class="ic" aria-hidden="true">🧥</span></button>
-      <button type="button" class="psy-btn verb" data-pick="BUY" title="Buy — then pick what" aria-label="Buy"><span class="ic" aria-hidden="true">🛒</span></button>
+      <button type="button" class="psy-btn util" data-cmd="INVENTORY" title="Inventory command" aria-label="Inventory command"><span class="lb">InvCmd</span></button>
+      <button type="button" class="psy-btn util" data-cmd="STATUS" title="Status" aria-label="Status"><span class="lb">Status</span></button>
+      <button type="button" class="psy-btn util" data-cmd="REST" title="Rest" aria-label="Rest"><span class="lb">Rest</span></button>
+      <button type="button" class="psy-btn verb" data-pick="EAT" title="Eat — then pick food" aria-label="Eat"><span class="lb">Eat</span></button>
+      <button type="button" class="psy-btn verb" data-pick="BREAK" title="Break — then pick what" aria-label="Break"><span class="lb">Break</span></button>
+      <button type="button" class="psy-btn verb" data-pick="TURN" title="Turn — then pick what" aria-label="Turn"><span class="lb">Turn</span></button>
+      <button type="button" class="psy-btn verb" data-pick="PUSH" title="Push — then pick what" aria-label="Push"><span class="lb">Push</span></button>
+      <button type="button" class="psy-btn verb" data-pick="PULL" title="Pull — then pick what" aria-label="Pull"><span class="lb">Pull</span></button>
+      <button type="button" class="psy-btn verb" data-pick="GIVE" title="Give — then pick item" aria-label="Give"><span class="lb">Give</span></button>
+      <button type="button" class="psy-btn verb" data-pick="TAKE" title="Take — then pick what" aria-label="Take"><span class="lb">Take</span></button>
+      <button type="button" class="psy-btn verb" data-pick="WEAR" title="Wear — then pick item" aria-label="Wear"><span class="lb">Wear</span></button>
+      <button type="button" class="psy-btn verb" data-pick="REMOVE" title="Remove — then pick item" aria-label="Remove"><span class="lb">Remove</span></button>
+      <button type="button" class="psy-btn verb" data-pick="BUY" title="Buy — then pick what" aria-label="Buy"><span class="lb">Buy</span></button>
     </div>
     <div id="cmd-row">
       <input id="cmd-input" type="text" enterkeyhint="send" autocomplete="off" autocorrect="off"
              autocapitalize="characters" spellcheck="false" placeholder="Type LOOK, GET door…" />
-      <button type="button" class="psy-btn" id="cmd-send" title="Send command" aria-label="Send"><span class="ic" aria-hidden="true">📤</span></button>
-      <button type="button" class="psy-btn util" id="cmd-kb" title="Show phone keyboard" aria-label="Keyboard"><span class="ic" aria-hidden="true">⌨️</span></button>
+      <button type="button" class="psy-btn" id="cmd-send" title="Send command" aria-label="Send"><span class="lb">Send</span></button>
+      <button type="button" class="psy-btn util" id="cmd-kb" title="Show phone keyboard" aria-label="Keyboard"><span class="lb">Type</span></button>
     </div>
   </div>
 
@@ -571,7 +584,7 @@
     })();
 
     // Cache-bust for IDBFS-refreshed scummvm.ini (see scummvm.js).
-    window.__PSY_CFG_V = 'k9';
+    window.__PSY_CFG_V = 'k10';
 
     // Match kuendig demo: launch args come from the URL hash.
     // Force software gfx (-g 1x) so iOS Safari WebGL hangs cannot leave
@@ -841,12 +854,97 @@
       fire('keyup');
     }
 
-    async function psyOpenScummMenu() {
-      // ScummVM Global Main Menu (Save / Load / Options)
+    function psyGetEnginePtr() {
+      try {
+        var live = (typeof Module !== 'undefined') ? Module['_g_engine_live'] : null;
+        if (live && typeof live.value !== 'undefined') {
+          var v = live.value;
+          if (typeof v === 'bigint') v = Number(v);
+          if (v) return v;
+        }
+      } catch (e) {}
+      try {
+        var snap = (typeof Module !== 'undefined') ? Module['_g_engine'] : 0;
+        if (snap) return snap;
+      } catch (e2) {}
+      return 0;
+    }
+
+    function psyOpenMainMenuNative() {
+      try {
+        var eng = psyGetEnginePtr();
+        var fn = (typeof Module !== 'undefined') ? Module['__ZN6Engine18openMainMenuDialogEv'] : null;
+        if (eng && typeof fn === 'function') {
+          console.log('[psy] openMainMenuDialog eng=', eng);
+          fn(eng);
+          return true;
+        }
+      } catch (e) {
+        console.warn('[psy] openMainMenuDialog failed', e);
+      }
+      return false;
+    }
+
+    async function psySendCtrlF5() {
+      // Hold Control, press F5, release — SDL reads ctrlKey and/or mod state.
       psyFocusGame();
-      await psyDelay(60);
+      await psyDelay(40);
+      psySendModKey('Control', 'ControlLeft', 17, { ctrl: true });
+      await psyDelay(30);
       psySendModKey('F5', 'F5', 116, { ctrl: true });
+      await psyDelay(40);
+      // Release Control
+      var canvas = document.getElementById('canvas');
+      function fireUp(key, codeStr, keyCode) {
+        var stub = psyMakeKeyStub('keyup', key, codeStr, keyCode);
+        stub.ctrlKey = false;
+        stub.target = canvas || window;
+        stub.currentTarget = stub.target;
+        stub.srcElement = stub.target;
+        try {
+          var JE = (typeof Module !== 'undefined') ? Module.JSEvents : null;
+          if (JE && JE.eventHandlers) {
+            for (var i = 0; i < JE.eventHandlers.length; i++) {
+              var h = JE.eventHandlers[i];
+              if (!h || h.eventTypeString !== 'keyup' || typeof h.handlerFunc !== 'function') continue;
+              try { h.handlerFunc(stub); } catch (err) {}
+            }
+          }
+        } catch (e) {}
+      }
+      fireUp('Control', 'ControlLeft', 17);
+      await psyDelay(40);
+    }
+
+    async function psyOpenScummMenu(kind) {
+      // Prefer native Engine::openMainMenuDialog(g_engine); fall back to Ctrl+F5.
+      kind = kind || 'menu';
+      var hint = document.getElementById('status-hint');
+      function say(msg) {
+        if (!hint) return;
+        hint.style.opacity = '1';
+        hint.textContent = msg;
+        setTimeout(function () { if (hint) hint.style.opacity = '0.35'; }, 6000);
+      }
+      psyFocusGame();
       await psyDelay(80);
+      if (psyOpenMainMenuNative()) {
+        say((kind === 'load' ? 'Load' : 'Save') + ' menu open — tap Save or Load');
+        return;
+      }
+      console.log('[psy] native GMM unavailable, trying Ctrl+F5');
+      await psySendCtrlF5();
+      await psyDelay(100);
+      // Retry native in case engine pointer appeared
+      if (psyOpenMainMenuNative()) {
+        say((kind === 'load' ? 'Load' : 'Save') + ' menu open — tap Save or Load');
+        return;
+      }
+      // Mac-style Meta+F5 and plain F5 as last resorts
+      psySendModKey('F5', 'F5', 116, { meta: true });
+      await psyDelay(60);
+      psySendModKey('F5', 'F5', 116, {});
+      say('If menu did not open, tap the game then Save again');
     }
 
     function psySubmitCommand(raw, opts) {
@@ -927,8 +1025,8 @@
       var btn = document.getElementById('btn-mute');
       if (btn) {
         btn.classList.toggle('on', window.__psySfxMuted);
-        var ic = btn.querySelector('.ic');
-        if (ic) ic.textContent = window.__psySfxMuted ? '🔇' : '🔊';
+        var lb = btn.querySelector('.lb');
+        if (lb) lb.textContent = window.__psySfxMuted ? 'Unmute' : 'Mute';
         btn.setAttribute('aria-label', window.__psySfxMuted ? 'Unmute SFX' : 'Mute SFX');
         btn.title = window.__psySfxMuted ? 'Unmute SFX' : 'Mute looping ambient/SFX';
       }
@@ -1091,7 +1189,7 @@
             : (w ? ' — tap to ' + (w.verb || 'USE') : ' — tap to LOOK');
           btn.setAttribute('aria-label', n + actionHint);
           btn.title = n + actionHint;
-          btn.innerHTML = '<span class="ic" aria-hidden="true">' + iconFor(n) + '</span>';
+          btn.innerHTML = '<span class="lb">' + shortLabel(n).replace(/</g, '&lt;') + '</span>';
           btn.addEventListener('click', function (ev) {
             ev.preventDefault();
             tapOwned(n);
@@ -1248,7 +1346,7 @@
 
       function loadCatalog() {
         var base = new URL('.', document.baseURI).pathname.replace(/\/?$/, '/');
-        var url = base + 'data/games/psychotic/objects.json?v=k9';
+        var url = base + 'data/games/psychotic/objects.json?v=k10';
         fetch(url).then(function (r) { return r.json(); }).then(function (j) {
           state.catalog.weapons = j.weapons || [];
           state.catalog.items = j.items || [];
@@ -1378,9 +1476,9 @@
         if (WEAPON_VERBS[verb]) {
           var ready = weaponsForVerb(verb);
           if (!ready.length) {
-            hint = 'Nothing to ' + verb.toLowerCase() + ' yet — pick a weapon icon or type a name';
+            hint = 'Nothing to ' + verb.toLowerCase() + ' yet — pick a weapon below or type a name';
           } else {
-            hint = 'Pick a weapon icon for ' + verb;
+            hint = 'Pick a weapon for ' + verb;
           }
           if (inp) {
             inp.value = verb + ' ';
@@ -1391,7 +1489,7 @@
           if (!have.length) {
             hint = 'Nothing to ' + verb.toLowerCase() + ' yet — get something first, or type a name';
           } else {
-            hint = 'Pick an item icon for ' + verb;
+            hint = 'Pick an item for ' + verb;
           }
           if (inp) {
             inp.value = verb + ' ';
@@ -1399,7 +1497,7 @@
           }
         } else {
           // Room / typed targets (GET, OPEN, …)
-          hint = 'Type what to ' + verb.toLowerCase() + ', then Send — or tap an item icon';
+          hint = 'Type what to ' + verb.toLowerCase() + ', then Send — or tap an item';
           if (inp) {
             inp.value = verb + ' ';
             try {
@@ -1497,8 +1595,8 @@
         e.preventDefault();
         var hide = !moreRow.hidden;
         moreRow.hidden = hide;
-        var ic = moreBtn.querySelector('.ic');
-        if (ic) ic.textContent = hide ? '⋯' : '▴';
+        var lb = moreBtn.querySelector('.lb');
+        if (lb) lb.textContent = hide ? 'More' : 'Less';
         moreBtn.setAttribute('aria-label', hide ? 'More commands' : 'Less commands');
         moreBtn.title = hide ? 'More commands' : 'Less commands';
       });
@@ -1514,16 +1612,14 @@
         saveBtn.addEventListener('click', function (e) {
           e.preventDefault();
           e.stopPropagation();
-          // ScummVM Global Main Menu → Save
-          psyOpenScummMenu();
+          psyOpenScummMenu('save');
         });
       }
       if (loadBtn) {
         loadBtn.addEventListener('click', function (e) {
           e.preventDefault();
           e.stopPropagation();
-          // Same menu has Load
-          psyOpenScummMenu();
+          psyOpenScummMenu('load');
         });
       }
 
@@ -1660,6 +1756,6 @@
       if (hint) hint.textContent = 'Error — see console, or reload.';
     };
   </script>
-  <script async type="text/javascript" src="scummvm.js"></script>
+  <script async type="text/javascript" src="scummvm.js?v=k10"></script>
 </body>
 </html>
